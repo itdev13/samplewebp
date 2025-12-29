@@ -1,0 +1,12 @@
+locationId,contactId,name,email,phone,companyName,address1,city,state,postalCode,country,website,timezone,dateOfBirth,gender,tags
+rf6ygZQRiMIa82DQ1H06,1q8IO9k4WJVhQ1Diajkl,,,,,,,,,,,,,
+rf6ygZQRiMIa82DQ1H06,,John Smith,john.smith@example.com,+12025551234,Tech Corp,123 Main St,New York,NY,10001,US,https://techcorp.com,America/New_York,1990-01-15,male,vip
+rf6ygZQRiMIa82DQ1H06,,Sarah Johnson,sarah.j@gmail.com,+14155559876,Design Studio,456 Oak Ave,San Francisco,CA,94102,US,,,1985-05-20,female,premium;customer
+rf6ygZQRiMIa82DQ1H06,,Mike Davis,,+13105558888,,789 Pine Rd,Los Angeles,CA,90001,US,,America/Los_Angeles,,,
+rf6ygZQRiMIa82DQ1H06,,Emily Brown,emily.brown@company.com,,ABC Company,,,,,,https://abc.com,,,,lead
+rf6ygZQRiMIa82DQ1H06,,Robert Wilson,rob.wilson@test.com,+12125554567,Wilson Inc,,,,,,,,1992-03-10,,client;priority
+rf6ygZQRiMIa82DQ1H06,,Lisa Anderson,,+19175553333,,,,,,,,,,female,
+rf6ygZQRiMIa82DQ1H06,,David Lee,david.lee@email.com,+16505552222,,,Palo Alto,CA,94301,US,,,,,
+rf6ygZQRiMIa82DQ1H06,,Jennifer Taylor,jen.taylor@mail.com,,,,,,,,,,,female,
+rf6ygZQRiMIa82DQ1H06,,Michael Chen,,+14085551111,Chen Enterprises,,,,,,,,,,prospect
+

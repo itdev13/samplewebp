@@ -1,0 +1,134 @@
+const express = require('express');
+const router = express.Router();
+const ghlService = require('../services/ghlService');
+const logger = require('../utils/logger');
+
+/**
+ * FEATURE 1: Download Conversations
+ * Search and export conversations with advanced filtering
+ */
+
+/**
+ * @route GET /api/conversations/download
+ * @desc Download conversations for a location
+ */
+router.get('/download', async (req, res) => {
+  try {
+    const { locationId, limit = 20, startDate, endDate } = req.query;
+
+    if (!locationId) {
+      return res.status(400).json({
+        success: false,
+        error: 'locationId is required'
+      });
+    }
+
+    logger.info('Downloading conversations for sub-account', { locationId, limit });
+
+    // Build filters
+    const filters = { limit };
+    if (startDate) filters.startDate = startDate;
+    if (endDate) filters.endDate = endDate;
+
+    // Fetch conversations from GHL
+    const result = await ghlService.searchConversations(locationId, filters);
+
+    const conversations = result.conversations || [];
+
+    res.json({
+      success: true,
+      message: 'Conversations downloaded successfully',
+      data: {
+        total: conversations.length,
+        conversations: conversations.map(conv => ({
+          id: conv.id,
+          contactId: conv.contactId,
+          contactName: conv.contactName,
+          lastMessageDate: conv.lastMessageDate,
+          lastMessageBody: conv.lastMessageBody,
+          unreadCount: conv.unreadCount,
+          type: conv.type
+        }))
+      },
+      meta: {
+        locationId,
+        downloadedAt: new Date().toISOString(),
+        filters
+      }
+    });
+
+  } catch (error) {
+    logger.error('Download conversations error:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Failed to download conversations',
+      message: error.message
+    });
+  }
+});
+
+/**
+ * @route GET /api/conversations/search
+ * @desc Search conversations with filters
+ */
+router.get('/search', async (req, res) => {
+  try {
+    const { locationId, ...filters } = req.query;
+
+    if (!locationId) {
+      return res.status(400).json({
+        success: false,
+        error: 'locationId is required'
+      });
+    }
+
+    const result = await ghlService.searchConversations(locationId, filters);
+
+    res.json({
+      success: true,
+      data: result
+    });
+
+  } catch (error) {
+    logger.error('Search conversations error:', error);
+    res.status(500).json({
+      success: false,
+      error: error.message
+    });
+  }
+});
+
+/**
+ * @route GET /api/conversations/:conversationId
+ * @desc Get specific conversation details
+ */
+router.get('/:conversationId', async (req, res) => {
+  try {
+    const { conversationId } = req.params;
+    const { locationId } = req.query;
+
+    if (!locationId) {
+      return res.status(400).json({
+        success: false,
+        error: 'locationId is required'
+      });
+    }
+
+    const conversation = await ghlService.getConversation(locationId, conversationId);
+
+    res.json({
+      success: true,
+      data: conversation
+    });
+
+  } catch (error) {
+    logger.error('Get conversation error:', error);
+    res.status(500).json({
+      success: false,
+      error: error.message
+    });
+  }
+});
+
+module.exports = router;
+

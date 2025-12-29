@@ -1,0 +1,623 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ConvoVault - Professional Conversation Management</title>
+  <link rel="icon" type="image/svg+xml" href="/assets/favicon.svg">
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+    
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+      color: #1F2937;
+      line-height: 1.6;
+      overflow-x: hidden;
+    }
+    
+    /* Hero Section */
+    .hero {
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: white;
+      padding: 80px 20px 100px;
+      text-align: center;
+      position: relative;
+      overflow: hidden;
+    }
+    
+    .hero::before {
+      content: '';
+      position: absolute;
+      top: -50%;
+      right: -50%;
+      width: 100%;
+      height: 100%;
+      background: radial-gradient(circle, rgba(255,255,255,0.1) 0%, transparent 70%);
+      animation: float 6s ease-in-out infinite;
+    }
+    
+    @keyframes float {
+      0%, 100% { transform: translateY(0px) rotate(0deg); }
+      50% { transform: translateY(-20px) rotate(5deg); }
+    }
+    
+    .hero-content {
+      max-width: 1200px;
+      margin: 0 auto;
+      position: relative;
+      z-index: 1;
+    }
+    
+    .hero-logo {
+      width: 120px;
+      height: 120px;
+      margin: 0 auto 30px;
+      background: rgba(255, 255, 255, 0.15);
+      backdrop-filter: blur(10px);
+      border-radius: 30px;
+      display: flex;
+      align-items: center;
+      justify-center;
+      font-size: 60px;
+      border: 3px solid rgba(255, 255, 255, 0.3);
+      animation: pulse 3s ease-in-out infinite;
+    }
+    
+    @keyframes pulse {
+      0%, 100% { transform: scale(1); }
+      50% { transform: scale(1.05); }
+    }
+    
+    .hero h1 {
+      font-size: 56px;
+      font-weight: 800;
+      margin-bottom: 20px;
+      text-shadow: 0 2px 10px rgba(0,0,0,0.1);
+    }
+    
+    .hero p {
+      font-size: 22px;
+      margin-bottom: 40px;
+      opacity: 0.95;
+      max-width: 700px;
+      margin-left: auto;
+      margin-right: auto;
+    }
+    
+    .cta-buttons {
+      display: flex;
+      gap: 20px;
+      justify-content: center;
+      flex-wrap: wrap;
+    }
+    
+    .btn {
+      padding: 16px 40px;
+      font-size: 18px;
+      font-weight: 600;
+      border-radius: 12px;
+      text-decoration: none;
+      display: inline-block;
+      transition: all 0.3s;
+      cursor: pointer;
+      border: none;
+    }
+    
+    .btn-primary {
+      background: white;
+      color: #667eea;
+      box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+    }
+    
+    .btn-primary:hover {
+      transform: translateY(-3px);
+      box-shadow: 0 6px 20px rgba(0,0,0,0.3);
+    }
+    
+    .btn-secondary {
+      background: rgba(255, 255, 255, 0.2);
+      color: white;
+      border: 2px solid white;
+    }
+    
+    .btn-secondary:hover {
+      background: rgba(255, 255, 255, 0.3);
+    }
+    
+    /* Features Section */
+    .features {
+      padding: 80px 20px;
+      background: #F9FAFB;
+    }
+    
+    .container {
+      max-width: 1200px;
+      margin: 0 auto;
+    }
+    
+    .section-title {
+      text-align: center;
+      margin-bottom: 60px;
+    }
+    
+    .section-title h2 {
+      font-size: 42px;
+      font-weight: 800;
+      margin-bottom: 15px;
+      color: #1F2937;
+    }
+    
+    .section-title p {
+      font-size: 18px;
+      color: #6B7280;
+      max-width: 600px;
+      margin: 0 auto;
+    }
+    
+    .features-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+      gap: 30px;
+    }
+    
+    .feature-card {
+      background: white;
+      padding: 40px;
+      border-radius: 20px;
+      box-shadow: 0 4px 20px rgba(0,0,0,0.08);
+      transition: all 0.3s;
+      border: 2px solid transparent;
+    }
+    
+    .feature-card:hover {
+      transform: translateY(-10px);
+      box-shadow: 0 8px 30px rgba(102, 126, 234, 0.2);
+      border-color: #667eea;
+    }
+    
+    .feature-icon {
+      width: 80px;
+      height: 80px;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      border-radius: 20px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 40px;
+      margin-bottom: 25px;
+    }
+    
+    .feature-card h3 {
+      font-size: 24px;
+      margin-bottom: 15px;
+      color: #1F2937;
+    }
+    
+    .feature-card p {
+      color: #6B7280;
+      line-height: 1.8;
+    }
+    
+    /* How It Works */
+    .how-it-works {
+      padding: 80px 20px;
+      background: white;
+    }
+    
+    .steps {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+      gap: 40px;
+      margin-top: 60px;
+    }
+    
+    .step {
+      text-align: center;
+      position: relative;
+    }
+    
+    .step-number {
+      width: 80px;
+      height: 80px;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: white;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 36px;
+      font-weight: 800;
+      margin: 0 auto 25px;
+      box-shadow: 0 4px 20px rgba(102, 126, 234, 0.4);
+    }
+    
+    .step h3 {
+      font-size: 22px;
+      margin-bottom: 12px;
+      color: #1F2937;
+    }
+    
+    .step p {
+      color: #6B7280;
+      line-height: 1.8;
+    }
+    
+    /* Use Cases */
+    .use-cases {
+      padding: 80px 20px;
+      background: linear-gradient(to bottom, #F9FAFB 0%, white 100%);
+    }
+    
+    .use-cases-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+      gap: 25px;
+      margin-top: 50px;
+    }
+    
+    .use-case {
+      background: white;
+      padding: 30px;
+      border-radius: 15px;
+      border-left: 4px solid #667eea;
+      box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+      transition: all 0.3s;
+    }
+    
+    .use-case:hover {
+      transform: translateX(5px);
+      box-shadow: 0 4px 20px rgba(102, 126, 234, 0.15);
+    }
+    
+    .use-case-icon {
+      font-size: 32px;
+      margin-bottom: 15px;
+    }
+    
+    .use-case h4 {
+      font-size: 18px;
+      margin-bottom: 10px;
+      color: #1F2937;
+    }
+    
+    .use-case p {
+      color: #6B7280;
+      font-size: 14px;
+    }
+    
+    /* Screenshots */
+    .screenshots {
+      padding: 80px 20px;
+      background: white;
+    }
+    
+    .screenshot-container {
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      border-radius: 20px;
+      padding: 60px;
+      margin-top: 50px;
+      box-shadow: 0 10px 40px rgba(102, 126, 234, 0.3);
+    }
+    
+    .screenshot {
+      background: white;
+      border-radius: 12px;
+      padding: 20px;
+      box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+    }
+    
+    .screenshot img {
+      width: 100%;
+      border-radius: 8px;
+    }
+    
+    /* CTA Section */
+    .cta-section {
+      padding: 100px 20px;
+      background: linear-gradient(135deg, #1F2937 0%, #111827 100%);
+      color: white;
+      text-align: center;
+    }
+    
+    .cta-section h2 {
+      font-size: 48px;
+      margin-bottom: 20px;
+    }
+    
+    .cta-section p {
+      font-size: 20px;
+      margin-bottom: 40px;
+      opacity: 0.9;
+    }
+    
+    /* Stats */
+    .stats {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 30px;
+      max-width: 900px;
+      margin: 60px auto 0;
+    }
+    
+    .stat {
+      text-align: center;
+    }
+    
+    .stat-number {
+      font-size: 48px;
+      font-weight: 800;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+      margin-bottom: 10px;
+    }
+    
+    .stat-label {
+      color: #6B7280;
+      font-size: 16px;
+    }
+    
+    /* Footer */
+    .footer {
+      background: #1F2937;
+      color: white;
+      padding: 40px 20px;
+      text-align: center;
+    }
+    
+    .footer p {
+      opacity: 0.7;
+    }
+    
+    /* Responsive */
+    @media (max-width: 768px) {
+      .hero h1 { font-size: 36px; }
+      .hero p { font-size: 18px; }
+      .section-title h2 { font-size: 32px; }
+      .cta-section h2 { font-size: 36px; }
+      .screenshot-container { padding: 30px; }
+    }
+  </style>
+</head>
+<body>
+  <!-- Hero Section -->
+  <div class="hero">
+    <div class="hero-content">
+      <div class="hero-logo">🔐</div>
+      <h1>ConvoVault</h1>
+      <p>Professional conversation management for your business. Export, import, and archive conversations with advanced filtering and full context.</p>
+      <div class="cta-buttons">
+        <a href="/oauth/authorize" class="btn btn-primary">Get Started Now</a>
+        <a href="#how-it-works" class="btn btn-secondary">See How It Works</a>
+      </div>
+    </div>
+  </div>
+
+  <!-- Stats -->
+  <div class="features">
+    <div class="container">
+      <div class="stats">
+        <div class="stat">
+          <div class="stat-number">3</div>
+          <div class="stat-label">Core Features</div>
+        </div>
+        <div class="stat">
+          <div class="stat-number">∞</div>
+          <div class="stat-label">Conversations</div>
+        </div>
+        <div class="stat">
+          <div class="stat-number">24/7</div>
+          <div class="stat-label">Always Available</div>
+        </div>
+        <div class="stat">
+          <div class="stat-number">100%</div>
+          <div class="stat-label">Secure</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Features Section -->
+  <div class="features">
+    <div class="container">
+      <div class="section-title">
+        <h2>Powerful Features</h2>
+        <p>Everything you need to manage your conversations professionally</p>
+      </div>
+      
+      <div class="features-grid">
+        <div class="feature-card">
+          <div class="feature-icon">📥</div>
+          <h3>Download Conversations</h3>
+          <p>Export conversations with advanced filtering by date range, contact, and channel. Perfect for compliance, backup, and record-keeping with full conversation threading.</p>
+        </div>
+        
+        <div class="feature-card">
+          <div class="feature-icon">💬</div>
+          <h3>Get Messages with Context</h3>
+          <p>Retrieve all messages with full conversation context. Every message includes conversationId for proper threading and analysis. Download as JSON or CSV.</p>
+        </div>
+        
+        <div class="feature-card">
+          <div class="feature-icon">📤</div>
+          <h3>Import from CSV/Excel</h3>
+          <p>Bulk import messages from spreadsheets. Perfect for data migration, historical records, and bulk messaging. Supports CSV and Excel formats.</p>
+        </div>
+        
+        <div class="feature-card">
+          <div class="feature-icon">🎯</div>
+          <h3>Advanced Filtering</h3>
+          <p>Filter by date range, contact, channel (SMS, Email, WhatsApp), and more. Get exactly the data you need with precision targeting.</p>
+        </div>
+        
+        <div class="feature-card">
+          <div class="feature-icon">🔒</div>
+          <h3>Secure & Private</h3>
+          <p>OAuth 2.0 authentication with automatic token refresh. Your data stays secure with encrypted connections and industry-standard security.</p>
+        </div>
+        
+        <div class="feature-card">
+          <div class="feature-icon">🔄</div>
+          <h3>Automatic Pagination</h3>
+          <p>Handle thousands of messages effortlessly. Our system automatically manages pagination and rate limiting for you.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- How It Works -->
+  <div class="how-it-works" id="how-it-works">
+    <div class="container">
+      <div class="section-title">
+        <h2>How It Works</h2>
+        <p>Get started in just 3 simple steps</p>
+      </div>
+      
+      <div class="steps">
+        <div class="step">
+          <div class="step-number">1</div>
+          <h3>Connect Your Account</h3>
+          <p>Click "Get Started" and securely connect ConvoVault to your sub-account using OAuth 2.0. Takes less than 30 seconds.</p>
+        </div>
+        
+        <div class="step">
+          <div class="step-number">2</div>
+          <h3>Access from Sidebar</h3>
+          <p>Find "ConvoVault" in your sub-account's left navigation menu. Click to launch and access all features instantly.</p>
+        </div>
+        
+        <div class="step">
+          <div class="step-number">3</div>
+          <h3>Start Managing</h3>
+          <p>Export conversations, get messages, or import from CSV/Excel. All features are ready to use immediately with no configuration.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Use Cases -->
+  <div class="use-cases">
+    <div class="container">
+      <div class="section-title">
+        <h2>Perfect For Every Industry</h2>
+        <p>ConvoVault helps businesses across all sectors manage conversations professionally</p>
+      </div>
+      
+      <div class="use-cases-grid">
+        <div class="use-case">
+          <div class="use-case-icon">🏥</div>
+          <h4>Healthcare</h4>
+          <p>HIPAA-compliant conversation archiving for medical practices and healthcare providers</p>
+        </div>
+        
+        <div class="use-case">
+          <div class="use-case-icon">⚖️</div>
+          <h4>Legal Firms</h4>
+          <p>Complete case documentation and communication records for legal compliance</p>
+        </div>
+        
+        <div class="use-case">
+          <div class="use-case-icon">🏠</div>
+          <h4>Real Estate</h4>
+          <p>Client communication backup and transaction documentation</p>
+        </div>
+        
+        <div class="use-case">
+          <div class="use-case-icon">💼</div>
+          <h4>Financial Services</h4>
+          <p>Compliance-ready audit trails and client interaction records</p>
+        </div>
+        
+        <div class="use-case">
+          <div class="use-case-icon">🏪</div>
+          <h4>Insurance</h4>
+          <p>Policy holder communication logs and claims documentation</p>
+        </div>
+        
+        <div class="use-case">
+          <div class="use-case-icon">📱</div>
+          <h4>Marketing Agencies</h4>
+          <p>Client conversation archives and campaign communication tracking</p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Screenshots -->
+  <div class="screenshots">
+    <div class="container">
+      <div class="section-title">
+        <h2>Beautiful & Intuitive Interface</h2>
+        <p>Designed for professionals, built for everyone</p>
+      </div>
+      
+      <div class="screenshot-container">
+        <div class="screenshot">
+          <img src="/assets/convo-vault.png" alt="ConvoVault Dashboard Interface" />
+        </div>
+      </div>
+      
+      <div style="margin-top: 30px; text-align: center;">
+        <p style="color: #6B7280; font-size: 16px; margin-bottom: 20px;">
+          ✨ Clean, modern interface • Responsive design • Easy to navigate • Real-time data
+        </p>
+      </div>
+    </div>
+  </div>
+
+  <!-- Key Benefits -->
+  <div class="features" style="background: linear-gradient(135deg, #EEF2FF 0%, #E0E7FF 100%);">
+    <div class="container">
+      <div class="section-title">
+        <h2>Why Choose ConvoVault?</h2>
+        <p>Built for professionals who demand excellence</p>
+      </div>
+      
+      <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(350px, 1fr)); gap: 30px; margin-top: 50px;">
+        <div style="background: white; padding: 30px; border-radius: 15px; box-shadow: 0 4px 15px rgba(0,0,0,0.08);">
+          <div style="font-size: 36px; margin-bottom: 15px;">⚡</div>
+          <h3 style="margin-bottom: 10px; color: #1F2937;">Lightning Fast</h3>
+          <p style="color: #6B7280;">Export thousands of messages in seconds with our optimized pagination and caching system.</p>
+        </div>
+        
+        <div style="background: white; padding: 30px; border-radius: 15px; box-shadow: 0 4px 15px rgba(0,0,0,0.08);">
+          <div style="font-size: 36px; margin-bottom: 15px;">🛡️</div>
+          <h3 style="margin-bottom: 10px; color: #1F2937;">Enterprise Security</h3>
+          <p style="color: #6B7280;">Bank-level encryption, OAuth 2.0, and automatic token refresh. Your data is always protected.</p>
+        </div>
+        
+        <div style="background: white; padding: 30px; border-radius: 15px; box-shadow: 0 4px 15px rgba(0,0,0,0.08);">
+          <div style="font-size: 36px; margin-bottom: 15px;">📊</div>
+          <h3 style="margin-bottom: 10px; color: #1F2937;">Full Context</h3>
+          <p style="color: #6B7280;">Every export includes conversationId for proper threading. Perfect for analytics and reporting.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- CTA Section -->
+  <div class="cta-section">
+    <div class="container">
+      <h2>Ready to Secure Your Conversations?</h2>
+      <p>Join businesses that trust ConvoVault for professional conversation management</p>
+      <div class="cta-buttons">
+        <a href="/oauth/authorize" class="btn btn-primary">Install Now</a>
+      </div>
+    </div>
+  </div>
+
+  <!-- Footer -->
+  <div class="footer">
+    <div class="container">
+      <p>&copy; 2025 ConvoVault. Professional Conversation Management.</p>
+      <p style="margin-top: 10px; font-size: 14px;">Secure • Reliable • Professional</p>
+    </div>
+  </div>
+</body>
+</html>
+

@@ -1,0 +1,93 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg width="960" height="540" viewBox="0 0 960 540" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <!-- Clean white background -->
+  <rect width="960" height="540" fill="#FFFFFF"/>
+  
+  <!-- Top accent bar -->
+  <rect width="960" height="6" fill="#2563EB"/>
+  
+  <!-- Logo area -->
+  <circle cx="160" cy="100" r="50" fill="#EEF2FF"/>
+  <text x="160" y="120" font-family="system-ui, sans-serif" font-size="45" text-anchor="middle">🔐</text>
+  
+  <!-- Main headline -->
+  <text x="280" y="85" font-family="system-ui, sans-serif" font-size="48" font-weight="700" fill="#1F2937">
+    ConvoVault
+  </text>
+  <text x="280" y="125" font-family="system-ui, sans-serif" font-size="22" fill="#6B7280">
+    Professional Conversation Management
+  </text>
+  
+  <!-- Three feature columns -->
+  <g id="feature-1">
+    <rect x="60" y="200" width="250" height="290" rx="12" fill="#F9FAFB" stroke="#E5E7EB" stroke-width="2"/>
+    <circle cx="185" cy="255" r="35" fill="#DBEAFE"/>
+    <text x="185" y="270" font-family="system-ui, sans-serif" font-size="35" text-anchor="middle">📥</text>
+    <text x="185" y="330" font-family="system-ui, sans-serif" font-size="20" font-weight="600" fill="#1F2937" text-anchor="middle">
+      Download
+    </text>
+    <text x="185" y="355" font-family="system-ui, sans-serif" font-size="20" font-weight="600" fill="#1F2937" text-anchor="middle">
+      Conversations
+    </text>
+    <text x="185" y="390" font-family="system-ui, sans-serif" font-size="14" fill="#6B7280" text-anchor="middle">
+      Export with advanced filtering
+    </text>
+    <text x="185" y="410" font-family="system-ui, sans-serif" font-size="14" fill="#6B7280" text-anchor="middle">
+      by date, contact, and channel
+    </text>
+    <rect x="110" y="445" width="150" height="32" rx="16" fill="#2563EB"/>
+    <text x="185" y="466" font-family="system-ui, sans-serif" font-size="13" font-weight="600" fill="white" text-anchor="middle">
+      Advanced Filters
+    </text>
+  </g>
+  
+  <g id="feature-2">
+    <rect x="355" y="200" width="250" height="290" rx="12" fill="#F9FAFB" stroke="#E5E7EB" stroke-width="2"/>
+    <circle cx="480" cy="255" r="35" fill="#D1FAE5"/>
+    <text x="480" y="270" font-family="system-ui, sans-serif" font-size="35" text-anchor="middle">💬</text>
+    <text x="480" y="330" font-family="system-ui, sans-serif" font-size="20" font-weight="600" fill="#1F2937" text-anchor="middle">
+      Get Messages
+    </text>
+    <text x="480" y="355" font-family="system-ui, sans-serif" font-size="20" font-weight="600" fill="#1F2937" text-anchor="middle">
+      with Context
+    </text>
+    <text x="480" y="390" font-family="system-ui, sans-serif" font-size="14" fill="#6B7280" text-anchor="middle">
+      Full conversation context
+    </text>
+    <text x="480" y="410" font-family="system-ui, sans-serif" font-size="14" fill="#6B7280" text-anchor="middle">
+      with conversationId included
+    </text>
+    <rect x="405" y="445" width="150" height="32" rx="16" fill="#06B6D4"/>
+    <text x="480" y="466" font-family="system-ui, sans-serif" font-size="13" font-weight="600" fill="white" text-anchor="middle">
+      CSV Export
+    </text>
+  </g>
+  
+  <g id="feature-3">
+    <rect x="650" y="200" width="250" height="290" rx="12" fill="#F9FAFB" stroke="#E5E7EB" stroke-width="2"/>
+    <circle cx="775" cy="255" r="35" fill="#FEF3C7"/>
+    <text x="775" y="270" font-family="system-ui, sans-serif" font-size="35" text-anchor="middle">📤</text>
+    <text x="775" y="330" font-family="system-ui, sans-serif" font-size="20" font-weight="600" fill="#1F2937" text-anchor="middle">
+      Import from
+    </text>
+    <text x="775" y="355" font-family="system-ui, sans-serif" font-size="20" font-weight="600" fill="#1F2937" text-anchor="middle">
+      CSV/Excel
+    </text>
+    <text x="775" y="390" font-family="system-ui, sans-serif" font-size="14" fill="#6B7280" text-anchor="middle">
+      Bulk import messages from
+    </text>
+    <text x="775" y="410" font-family="system-ui, sans-serif" font-size="14" fill="#6B7280" text-anchor="middle">
+      spreadsheets for migration
+    </text>
+    <rect x="700" y="445" width="150" height="32" rx="16" fill="#F59E0B"/>
+    <text x="775" y="466" font-family="system-ui, sans-serif" font-size="13" font-weight="600" fill="white" text-anchor="middle">
+      Bulk Upload
+    </text>
+  </g>
+  
+  <!-- Bottom tagline -->
+  <text x="480" y="525" font-family="system-ui, sans-serif" font-size="14" fill="#9CA3AF" text-anchor="middle">
+    Secure OAuth • Multi-Channel Support • Professional Compliance Tools
+  </text>
+</svg>
+

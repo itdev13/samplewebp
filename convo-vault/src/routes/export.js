@@ -1,0 +1,210 @@
+const express = require('express');
+const router = express.Router();
+const ghlService = require('../services/ghlService');
+const logger = require('../utils/logger');
+
+/**
+ * BONUS FEATURE: Advanced Message Export
+ * Export messages with conversation context and advanced filters
+ */
+
+/**
+ * @route GET /api/export/messages
+ * @desc Export messages with advanced filtering and pagination
+ * Includes conversationId in response for better context
+ */
+router.get('/messages', async (req, res) => {
+  try {
+    const { 
+      locationId, 
+      channel,      // SMS, Email, WhatsApp, Call, etc. (optional)
+      startDate,    // ISO date string
+      endDate,      // ISO date string
+      contactId,    // Specific contact
+      cursor,       // For pagination
+      limit = 100   // Messages per page
+    } = req.query;
+
+    if (!locationId) {
+      return res.status(400).json({
+        success: false,
+        error: 'locationId is required'
+      });
+    }
+
+    logger.info('Advanced message export', { 
+      locationId, 
+      channel, 
+      hasDateFilter: !!(startDate && endDate)
+    });
+
+    // Build export options
+    const options = { limit: parseInt(limit) };
+    if (channel) options.channel = channel;
+    if (startDate) options.startDate = startDate;
+    if (endDate) options.endDate = endDate;
+    if (contactId) options.contactId = contactId;
+    if (cursor) options.cursor = cursor;
+
+    // Export messages using advanced endpoint
+    const result = await ghlService.exportMessages(locationId, options);
+
+    const messages = result.messages || [];
+
+    res.json({
+      success: true,
+      message: 'Messages exported successfully',
+      data: {
+        total: messages.length,
+        messages: messages.map(msg => ({
+          id: msg.id,
+          conversationId: msg.conversationId,  // ← Important for context!
+          contactId: msg.contactId,
+          type: msg.type,
+          body: msg.body,
+          direction: msg.direction,
+          status: msg.status,
+          dateAdded: msg.dateAdded,
+          attachments: msg.attachments || []
+        })),
+        pagination: {
+          nextCursor: result.nextCursor,
+          hasMore: !!result.nextCursor
+        }
+      },
+      meta: {
+        locationId,
+        filters: options,
+        exportedAt: new Date().toISOString()
+      }
+    });
+
+  } catch (error) {
+    logger.error('Export messages error:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Failed to export messages',
+      message: error.message
+    });
+  }
+});
+
+/**
+ * @route GET /api/export/messages/all
+ * @desc Export ALL messages with automatic pagination
+ * Handles cursor-based pagination automatically
+ */
+router.get('/messages/all', async (req, res) => {
+  try {
+    const { locationId, channel, startDate, endDate, contactId } = req.query;
+
+    if (!locationId) {
+      return res.status(400).json({
+        success: false,
+        error: 'locationId is required'
+      });
+    }
+
+    logger.info('Bulk export started for sub-account', { locationId });
+
+    const filters = {};
+    if (channel) filters.channel = channel;
+    if (startDate) filters.startDate = startDate;
+    if (endDate) filters.endDate = endDate;
+    if (contactId) filters.contactId = contactId;
+
+    // Export all messages (handles pagination automatically)
+    const allMessages = await ghlService.exportAllMessages(
+      locationId, 
+      filters,
+      (fetched, total) => {
+        logger.info(`Progress: ${fetched}/${total || '?'} messages`);
+      }
+    );
+
+    // Group by conversation for better context
+    const byConversation = {};
+    allMessages.forEach(msg => {
+      const convId = msg.conversationId || 'unknown';
+      if (!byConversation[convId]) {
+        byConversation[convId] = [];
+      }
+      byConversation[convId].push(msg);
+    });
+
+    res.json({
+      success: true,
+      message: 'Bulk export completed',
+      data: {
+        totalMessages: allMessages.length,
+        totalConversations: Object.keys(byConversation).length,
+        messages: allMessages,
+        byConversation: byConversation
+      },
+      meta: {
+        locationId,
+        filters,
+        exportedAt: new Date().toISOString()
+      }
+    });
+
+  } catch (error) {
+    logger.error('Bulk export error:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Failed to bulk export',
+      message: error.message
+    });
+  }
+});
+
+/**
+ * @route GET /api/export/csv
+ * @desc Export messages as CSV format
+ */
+router.get('/csv', async (req, res) => {
+  try {
+    const { locationId, channel, startDate, endDate } = req.query;
+
+    if (!locationId) {
+      return res.status(400).json({
+        success: false,
+        error: 'locationId is required'
+      });
+    }
+
+    const filters = {};
+    if (channel) filters.channel = channel;
+    if (startDate) filters.startDate = startDate;
+    if (endDate) filters.endDate = endDate;
+
+    // Export all messages for sub-account
+    const messages = await ghlService.exportAllMessages(locationId, filters);
+
+    // Convert to CSV format
+    const csvHeaders = 'Date,ConversationID,ContactID,Type,Direction,Status,Message\n';
+    const csvRows = messages.map(msg => {
+      const date = new Date(msg.dateAdded).toISOString();
+      const message = (msg.body || '').replace(/"/g, '""').replace(/\n/g, ' ');
+      return `"${date}","${msg.conversationId}","${msg.contactId}","${msg.type}","${msg.direction}","${msg.status}","${message}"`;
+    }).join('\n');
+
+    const csv = csvHeaders + csvRows;
+
+    // Send as downloadable file
+    const filename = `messages_${locationId}_${Date.now()}.csv`;
+    res.setHeader('Content-Type', 'text/csv');
+    res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
+    res.send(csv);
+
+  } catch (error) {
+    logger.error('CSV export error:', error);
+    res.status(500).json({
+      success: false,
+      error: error.message
+    });
+  }
+});
+
+module.exports = router;
+
