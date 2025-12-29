@@ -34,6 +34,7 @@ class ConversationsManagerApp {
             origin.includes('127.0.0.1') ||
             origin.includes('trycloudflare.com') ||
             origin.includes('gohighlevel.com') ||
+            origin.includes('onrender.com') ||
             origin.includes('leadconnectorhq.com')) {
           return callback(null, true);
         }
