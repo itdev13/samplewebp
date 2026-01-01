@@ -21,7 +21,7 @@ export const AuthProvider = ({ children }) => {
   const authAttemptCount = useRef(0); // Track number of attempts
   const maxAttempts = 3; // Maximum 3 attempts
 
-  // Authenticate with backend when GHL context is available (MAX 3 ATTEMPTS)
+  // Authenticate with backend when user context is available (MAX 3 ATTEMPTS)
   useEffect(() => {
     if (ghlContext && !session && authAttemptCount.current < maxAttempts) {
       authenticateUser(ghlContext);
@@ -38,12 +38,9 @@ export const AuthProvider = ({ children }) => {
     // Increment attempt counter
     authAttemptCount.current += 1;
     const attemptNum = authAttemptCount.current;
-    
-    console.log(`🔐 Authentication attempt ${attemptNum}/${maxAttempts}...`);
 
     // Check if we've exceeded max attempts
     if (attemptNum > maxAttempts) {
-      console.error('❌ Max authentication attempts reached');
       setError('Maximum authentication attempts reached. Please refresh the page.');
       setLoading(false);
       return;
@@ -71,10 +68,7 @@ export const AuthProvider = ({ children }) => {
       setError(null);
       setLoading(false);
       
-      console.log('✅ Authenticated successfully');
     } catch (err) {
-      console.error(`❌ Authentication attempt ${attemptNum} failed:`, err.message);
-      
       const errorMessage = err.message || 'Authentication failed';
       setError(errorMessage);
       setLoading(false);
@@ -89,9 +83,7 @@ export const AuthProvider = ({ children }) => {
       const response = await authAPI.refresh();
       localStorage.setItem('sessionToken', response.sessionToken);
       setSession(prev => ({ ...prev, token: response.sessionToken }));
-      console.log('🔄 Session refreshed');
     } catch (err) {
-      console.error('❌ Session refresh failed:', err);
       logout();
     }
   };

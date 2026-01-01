@@ -2,7 +2,7 @@ import apiClient from './client';
 
 export const authAPI = {
   /**
-   * Verify GHL context and create session
+   * Verify user context and create session
    */
   verify: async ({ locationId, companyId, userId }) => {
     const response = await apiClient.post('/auth/verify', {

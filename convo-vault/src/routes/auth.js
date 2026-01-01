@@ -24,24 +24,21 @@ router.post('/decrypt-user-data', async (req, res) => {
     const sharedSecret = process.env.GHL_APP_SHARED_SECRET;
     
     if (!sharedSecret) {
-      logger.error('GHL_APP_SHARED_SECRET not configured!');
+      logger.error('Shared Secret not configured');
       return res.status(500).json({
         success: false,
         error: 'Shared Secret not configured'
       });
     }
 
-    logger.info('Decrypting GHL user data...');
-
-    // Decrypt using CryptoJS (official GHL method)
+    // Decrypt using CryptoJS
     const decrypted = CryptoJS.AES.decrypt(encryptedData, sharedSecret).toString(CryptoJS.enc.Utf8);
     const userData = JSON.parse(decrypted);
 
-    logger.info('✅ User data decrypted successfully', { 
-      userId: userData.userId,
-      locationId: userData.activeLocation,
-      type: userData.type 
-    });
+    // Don't log sensitive user data in production
+    if (process.env.NODE_ENV !== 'production') {
+      logger.info('User data decrypted');
+    }
 
     // Return decrypted user data
     res.json({
