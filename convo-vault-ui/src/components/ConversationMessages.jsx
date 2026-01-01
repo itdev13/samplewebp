@@ -2,13 +2,16 @@ import React, { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { useAuth } from '../context/AuthContext';
 import { messagesAPI } from '../api/messages';
+import { exportAPI } from '../api/export';
 import { Button, Select } from 'antd';
+import { useErrorModal } from './ErrorModal';
 
 export default function ConversationMessages({ conversation, onBack }) {
   const { location } = useAuth();
   const [pageSize, setPageSize] = useState(20);
   const [lastMessageId, setLastMessageId] = useState(null);
   const [downloading, setDownloading] = useState(false);
+  const { showError, ErrorModalComponent } = useErrorModal();
 
   const { data, isLoading, error } = useQuery({
     queryKey: ['conversation-messages', conversation?.id, location?.id, pageSize, lastMessageId],
@@ -19,20 +22,72 @@ export default function ConversationMessages({ conversation, onBack }) {
       });
       return response;
     },
-    enabled: !!conversation && !!location?.id
+    enabled: !!conversation && !!location?.id,
+    cacheTime: 0, // Don't cache - always fetch fresh
+    staleTime: 0, // Data is immediately stale
+    refetchOnMount: 'always' // Always refetch on mount
   });
 
   const messages = data?.data?.messages || [];
   const hasMore = data?.data?.pagination?.hasMore || false;
   const nextCursor = data?.data?.pagination?.nextCursor;
 
-  // Download messages for this conversation
+  // Download ALL messages for this conversation as CSV (fetch in batches, limit 500)
   const handleDownload = async () => {
     try {
       setDownloading(true);
-      await messagesAPI.download(conversation.id, location.id);
+      
+      let allMessages = [];
+      let cursor = null;
+      let hasMore = true;
+      const exportLimit = 500; // Use max limit for export
+      let batchCount = 0;
+      
+      // Fetch all messages using export API with conversationId filter
+      while (hasMore && batchCount < 20) { // Max 10,000 messages per conversation
+        const response = await exportAPI.exportMessages(location.id, {
+          conversationId: conversation.id, // Filter by this conversation
+          limit: exportLimit,
+          cursor: cursor || undefined
+        });
+        
+        const batch = response.data.messages || [];
+        allMessages = [...allMessages, ...batch];
+        
+        // Check for next cursor
+        cursor = response.data.pagination?.nextCursor;
+        hasMore = !!cursor && batch.length === exportLimit;
+        batchCount++;
+        
+        // Small delay between requests
+        if (hasMore) {
+          await new Promise(resolve => setTimeout(resolve, 300));
+        }
+      }
+      
+      // Convert to CSV
+      const csvHeaders = 'Date,Message ID,Type,Direction,Status,Message,Contact ID\n';
+      const csvRows = allMessages.map(msg => {
+        const date = new Date(msg.dateAdded).toISOString();
+        const message = (msg.body || '').replace(/"/g, '""').replace(/\n/g, ' ');
+        return `"${date}","${msg.id}","${msg.type || ''}","${msg.direction || ''}","${msg.status || ''}","${message}","${msg.contactId || ''}"`;
+      }).join('\n');
+      
+      const csv = csvHeaders + csvRows;
+      
+      // Download CSV
+      const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `conversation_${conversation.contactName || 'messages'}_${Date.now()}.csv`;
+      document.body.appendChild(a);
+      a.click();
+      window.URL.revokeObjectURL(url);
+      document.body.removeChild(a);
+      
     } catch (err) {
-      console.error('Download failed:', err);
+      showError('Export Failed', 'Failed to export messages from this conversation. Please try again.');
     } finally {
       setDownloading(false);
     }
@@ -75,10 +130,22 @@ export default function ConversationMessages({ conversation, onBack }) {
               </svg>
             }
           >
-            Download CSV
+            {downloading ? 'Exporting...' : 'Export CSV'}
           </Button>
         </div>
       </div>
+
+      {/* Export Progress */}
+      {downloading && (
+        <div className="bg-blue-50 border-2 border-blue-200 rounded-xl p-4">
+          <div className="flex items-center gap-3">
+            <div className="animate-spin h-5 w-5 border-2 border-blue-600 border-t-transparent rounded-full"></div>
+            <span className="text-blue-700 font-medium">
+              Fetching all messages from this conversation... This may take a moment.
+            </span>
+          </div>
+        </div>
+      )}
 
       {/* Loading */}
       {isLoading && (

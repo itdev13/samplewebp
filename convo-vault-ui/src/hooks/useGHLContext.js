@@ -70,14 +70,14 @@ export const useGHLContext = () => {
         };
 
             window.addEventListener('message', messageHandler);
-
+        
             // Request user data from parent
-            if (window.parent !== window) {
+        if (window.parent !== window) {
               window.parent.postMessage({ message: 'REQUEST_USER_DATA' }, '*');
             } else {
               reject(new Error('Not in iframe'));
               return;
-            }
+        }
 
             // Timeout after 3 seconds (only if not resolved)
             localTimeoutId = setTimeout(() => {
@@ -111,23 +111,23 @@ export const useGHLContext = () => {
           if (err.message === 'MAX_ATTEMPTS_REACHED' || attemptCountRef.current >= MAX_ATTEMPTS) {
             setError('INSTALL_REQUIRED');
             setLoading(false);
-            return;
-          }
+          return;
+        }
 
           // Fallback: URL parameters (for development/testing)
-          const params = new URLSearchParams(window.location.search);
+            const params = new URLSearchParams(window.location.search);
           const urlLocationId = params.get('location_id') || params.get('locationId');
           const urlUserId = params.get('user_id') || params.get('userId');
           const urlCompanyId = params.get('company_id') || params.get('companyId');
 
           if (urlLocationId && urlUserId) {
-            setContext({
+                setContext({
               locationId: urlLocationId,
               companyId: urlCompanyId || 'unknown',
               userId: urlUserId,
-              type: 'Location'
-            });
-            setLoading(false);
+                  type: 'Location'
+                });
+                setLoading(false);
           } else {
             // No context available - redirect to about page on FRONTEND
             window.location.href = 'https://convo-vault.vercel.app/about.html';

@@ -243,7 +243,13 @@ router.get('/callback', async (req, res) => {
           <div style="background: #FEF3C7; padding: 15px; border-radius: 8px; margin-top: 25px; border-left: 4px solid #F59E0B;">
             <p style="color: #92400E; font-size: 13px; font-weight: 600; margin: 0;">
               ✓ Installation Complete! Close this window and find ConvoVault in your sub-account's left menu.
-          </p>
+            </p>
+          </div>
+          
+          <div style="margin-top: 20px; padding-top: 20px; border-top: 1px solid #E5E7EB;">
+            <a href="https://convo-vault.vercel.app/about.html" target="_blank" style="color: #667eea; text-decoration: none; font-size: 14px; font-weight: 600;">
+              🌐 Visit ConvoVault Website
+            </a>
           </div>
         </div>
       </body>
@@ -358,7 +364,13 @@ router.get('/callback', async (req, res) => {
               <p>💡 ConvoVault appears as a new menu item in your sub-account navigation</p>
             </div>
             
-            <p style="font-size: 13px; color: #9CA3AF; margin-top: 25px;">
+            <div style="margin-top: 25px; padding-top: 20px; border-top: 1px solid #E5E7EB;">
+              <a href="https://convo-vault.vercel.app/about.html" target="_blank" style="color: #667eea; text-decoration: none; font-size: 14px; font-weight: 600; display: inline-block; margin-bottom: 15px;">
+                🌐 Visit ConvoVault Website
+              </a>
+            </div>
+            
+            <p style="font-size: 13px; color: #9CA3AF; margin-top: 15px;">
               You can safely close this window
             </p>
           </div>
@@ -426,6 +438,12 @@ router.get('/callback', async (req, res) => {
             ${error.message}
           </div>
       <a href="/oauth/authorize">Try Again</a>
+          
+          <div style="margin-top: 25px; padding-top: 20px; border-top: 1px solid #E5E7EB;">
+            <a href="https://convo-vault.vercel.app/about.html" target="_blank" style="color: #667eea; text-decoration: none; font-size: 14px; font-weight: 600;">
+              🌐 Visit ConvoVault Website
+            </a>
+          </div>
         </div>
       </body>
       </html>

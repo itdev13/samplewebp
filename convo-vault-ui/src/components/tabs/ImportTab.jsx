@@ -13,20 +13,70 @@ export default function ImportTab() {
   const [fileInputKey, setFileInputKey] = useState(Date.now());
   const [modalVisible, setModalVisible] = useState(false);
   const [modalJobDetails, setModalJobDetails] = useState(null);
+  const [previewData, setPreviewData] = useState(null);
+  const [parsing, setParsing] = useState(false);
 
   // Fetch import history
   const { data: historyData, refetch: refetchHistory } = useQuery({
     queryKey: ['import-history', location?.id],
     queryFn: () => importAPI.getJobs(location.id),
     enabled: !!location?.id,
-    refetchInterval: jobId ? 3000 : false // Refresh while import is running
+    refetchInterval: jobId ? 3000 : false, // Refresh while import is running
+    cacheTime: 0, // Don't cache - always fetch fresh
+    staleTime: 0 // Data is immediately stale
   });
 
-  const handleFileSelect = (e) => {
+  const handleFileSelect = async (e) => {
     const file = e.target.files[0];
+    if (!file) return;
+
+    // Check file size (20MB limit)
+    const maxSize = 20 * 1024 * 1024; // 20MB
+    if (file.size > maxSize) {
+      setJobStatus({
+        status: 'failed',
+        error: `File size exceeds 20MB limit. Your file is ${(file.size / 1024 / 1024).toFixed(2)}MB. Please contact support to increase your limit.`
+      });
+      setFileInputKey(Date.now()); // Reset file input
+      return;
+    }
+
     setSelectedFile(file);
     setJobStatus(null);
     setJobId(null);
+    setParsing(true);
+    setPreviewData(null);
+
+    try {
+      // Parse file to show preview
+      const text = await file.text();
+      const lines = text.trim().split('\n');
+      
+      if (lines.length > 0) {
+        // Get headers
+        const headers = lines[0].split(',').map(h => h.trim());
+        
+        // Get first 5 data rows
+        const dataRows = lines.slice(1, 6).map(line => {
+          const values = line.split(',').map(v => v.trim());
+          const row = {};
+          headers.forEach((header, idx) => {
+            row[header] = values[idx] || '';
+          });
+          return row;
+        });
+
+        setPreviewData({
+          headers,
+          rows: dataRows,
+          totalRows: lines.length - 1 // Exclude header
+        });
+      }
+    } catch (error) {
+      console.error('Failed to parse file:', error);
+    } finally {
+      setParsing(false);
+    }
   };
 
   const handleUpload = async () => {
@@ -177,7 +227,10 @@ export default function ImportTab() {
                   CSV, XLSX, XLS files supported
                 </div>
                 <div className="text-xs text-gray-400 mt-1">
-                  Maximum file size: 10MB
+                  Maximum file size: 20MB
+                </div>
+                <div className="text-xs text-purple-600 mt-2 font-medium">
+                  💡 Need larger limits? Contact our Support team to request an increase
                 </div>
               </div>
             )}
@@ -192,8 +245,66 @@ export default function ImportTab() {
         </label>
       </div>
 
+      {/* File Preview */}
+      {previewData && !parsing && (
+        <div className="bg-white border-2 border-solid border-green-200 rounded-xl p-6 shadow-sm">
+          <div className="flex items-center justify-between mb-4">
+            <div>
+              <h3 className="text-lg font-bold text-gray-900">📊 File Preview</h3>
+              <p className="text-sm text-gray-600">
+                Showing first 5 rows • Total rows in file: <span className="font-semibold text-green-600">{previewData.totalRows}</span>
+              </p>
+            </div>
+            <div className="bg-green-100 px-3 py-1 rounded-full">
+              <span className="text-sm font-semibold text-green-700">✓ File Parsed</span>
+            </div>
+          </div>
+
+          <div className="overflow-x-auto">
+            <table className="w-full text-sm border-collapse">
+              <thead>
+                <tr className="bg-gradient-to-r from-purple-50 to-blue-50">
+                  <th className="px-4 py-3 text-left text-xs font-bold text-gray-700 uppercase border-1 border-solid border-gray-200">#</th>
+                  {previewData.headers.map((header, idx) => (
+                    <th key={idx} className="px-4 py-3 text-left text-xs font-bold text-gray-700 uppercase border-1 border-solid border-gray-200">
+                      {header}
+                    </th>
+                  ))}
+                </tr>
+              </thead>
+              <tbody>
+                {previewData.rows.map((row, rowIdx) => (
+                  <tr key={rowIdx} className={rowIdx % 2 === 0 ? 'bg-white' : 'bg-gray-50'}>
+                    <td className="px-4 py-3 text-gray-600 font-semibold border-1 border-solid border-gray-200">{rowIdx + 1}</td>
+                    {previewData.headers.map((header, cellIdx) => (
+                      <td key={cellIdx} className="px-4 py-3 text-gray-700 border-1 border-solid border-gray-200 max-w-xs truncate" title={row[header]}>
+                        {row[header] || <span className="text-gray-400 italic">empty</span>}
+                      </td>
+                    ))}
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+
+          {previewData.totalRows > 5 && (
+            <div className="mt-3 text-center text-sm text-gray-500">
+              ... and {previewData.totalRows - 5} more rows
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* Parsing Indicator */}
+      {parsing && (
+        <div className="bg-blue-50 border-1 border-solid border-blue-200 rounded-xl p-6 text-center">
+          <div className="animate-spin h-8 w-8 border-3 border-blue-600 border-t-transparent rounded-full mx-auto mb-3"></div>
+          <p className="text-blue-700 font-medium">Parsing file...</p>
+        </div>
+      )}
+
       {/* Upload Button */}
-      {selectedFile && (
+      {selectedFile && previewData && !parsing && (
         <button
           onClick={handleUpload}
           disabled={uploading}
@@ -209,7 +320,7 @@ export default function ImportTab() {
               <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M9 19l3 3m0 0l3-3m-3 3v-8" />
               </svg>
-              Upload and Import
+              Start Import ({previewData.totalRows} rows)
             </>
           )}
         </button>

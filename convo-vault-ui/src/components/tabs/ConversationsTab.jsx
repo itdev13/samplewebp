@@ -1,8 +1,9 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { useAuth } from '../../context/AuthContext';
 import { conversationsAPI } from '../../api/conversations';
-import { DatePicker, InputNumber } from 'antd';
+import { DatePicker, Select, Button, Tooltip, message } from 'antd';
+import { useErrorModal } from '../ErrorModal';
 import dayjs from 'dayjs';
 
 export default function ConversationsTab({ onSelectConversation }) {
@@ -10,16 +11,110 @@ export default function ConversationsTab({ onSelectConversation }) {
   const [filters, setFilters] = useState({
     limit: 20,
     startDate: '',
-    endDate: ''
+    endDate: '',
+    lastMessageType: '',
+    lastMessageDirection: '',
+    status: '',
+    lastMessageAction: '',
+    sortBy: 'last_message_date'
   });
+  const [downloading, setDownloading] = useState(false);
+  const [appliedFilters, setAppliedFilters] = useState(filters); // Filters actually used for API
+  const [shouldFetch, setShouldFetch] = useState(true); // Trigger for initial load
+  const { showError, ErrorModalComponent } = useErrorModal();
 
   const { data, isLoading, error, refetch } = useQuery({
-    queryKey: ['conversations', location?.id, filters],
-    queryFn: () => conversationsAPI.download(location.id, filters),
-    enabled: !!location?.id
+    queryKey: ['conversations', location?.id, appliedFilters, shouldFetch],
+    queryFn: async () => {
+      try {
+        return await conversationsAPI.download(location.id, appliedFilters);
+      } catch (error) {
+        // Handle 400 errors as "no results"
+        if (error.message?.includes('400') || error.message?.includes('Bad Request')) {
+          throw new Error('NO_RESULTS_FOUND');
+        }
+        throw error;
+      }
+    },
+    enabled: !!location?.id && shouldFetch, // Load on tab open or when search is clicked
+    cacheTime: 0, // Don't cache - always fetch fresh
+    staleTime: 0, // Data is immediately stale
+    refetchOnMount: 'always', // Always refetch on mount
+    refetchOnWindowFocus: false, // Don't refetch on window focus
+    retry: false // Don't retry on error
   });
 
+  // When appliedFilters changes, enable fetch
+  useEffect(() => {
+    if (JSON.stringify(appliedFilters) !== JSON.stringify(filters)) {
+      // Filters were applied via Search button
+      setShouldFetch(true);
+    }
+  }, [appliedFilters]);
+
   const conversations = data?.data?.conversations || [];
+
+  // Download ALL conversations as CSV (fetch in batches of 100)
+  // Note: UI shows user's selected limit, but export uses max limit (100)
+  const handleDownload = async () => {
+    try {
+      setDownloading(true);
+      
+      let allConversations = [];
+      const exportLimit = 100; // Always use max limit for export
+      let offset = 0;
+      let hasMore = true;
+      let batchCount = 0;
+      
+      // Fetch all conversations in batches of 100 (ignoring UI limit filter)
+      while (hasMore && batchCount < 20) { // Max 2000 conversations
+        const response = await conversationsAPI.download(location.id, {
+          limit: exportLimit, // Use 100 for export, not user's filter limit
+          startDate: filters.startDate,
+          endDate: filters.endDate,
+          offset: offset
+        });
+        
+        const batch = response.data.conversations || [];
+        allConversations = [...allConversations, ...batch];
+        
+        // Check if there are more
+        hasMore = batch.length === exportLimit;
+        offset += exportLimit;
+        batchCount++;
+        
+        // Small delay between requests
+        if (hasMore) {
+          await new Promise(resolve => setTimeout(resolve, 300));
+        }
+      }
+      
+      // Convert to CSV
+      const csvHeaders = 'ID,Contact Name,Contact ID,Last Message Date,Last Message,Unread Count,Type\n';
+      const csvRows = allConversations.map(conv => {
+        const lastMessage = (conv.lastMessageBody || '').replace(/"/g, '""').replace(/\n/g, ' ');
+        return `"${conv.id}","${conv.contactName || ''}","${conv.contactId || ''}","${conv.lastMessageDate || ''}","${lastMessage}","${conv.unreadCount || 0}","${conv.type || ''}"`;
+      }).join('\n');
+      
+      const csv = csvHeaders + csvRows;
+      
+      // Download CSV
+      const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `conversations_${Date.now()}.csv`;
+      document.body.appendChild(a);
+      a.click();
+      window.URL.revokeObjectURL(url);
+      document.body.removeChild(a);
+      
+    } catch (error) {
+      showError('Export Failed', 'Failed to export conversations. Please try again.');
+    } finally {
+      setDownloading(false);
+    }
+  };
 
   return (
     <div className="space-y-6">
@@ -29,13 +124,60 @@ export default function ConversationsTab({ onSelectConversation }) {
           <h2 className="text-2xl font-bold text-gray-900">Conversations</h2>
           <p className="text-sm text-gray-500 mt-1">View and manage your conversations</p>
         </div>
+        <div className="flex items-center gap-3">
         {data?.data && (
           <div className="bg-blue-50 px-4 py-2 rounded-lg">
-            <div className="text-2xl font-bold text-blue-600">{conversations.length}</div>
+              <div className="text-2xl font-bold text-blue-600">{data?.data?.total}</div>
             <div className="text-xs text-blue-600 font-medium">Total Conversations</div>
           </div>
         )}
+          {conversations.length > 0 && (
+            <div className="flex items-center gap-2">
+              <Button
+                onClick={handleDownload}
+                loading={downloading}
+                size="large"
+                type="primary"
+                icon={
+                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+                  </svg>
+                }
+              >
+                {downloading ? 'Exporting...' : 'Export CSV'}
+              </Button>
+              <Tooltip 
+                title={
+                  <div style={{ fontSize: '13px', lineHeight: '1.6' }}>
+                    <strong>Need additional fields?</strong>
+                    <br />
+                    Raise a request in the Support tab and we'll add them within 24 hours.
+                  </div>
+                }
+                placement="left"
+              >
+                <div className="w-6 h-6 bg-blue-100 rounded-full flex items-center justify-center cursor-help">
+                  <svg className="w-4 h-4 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                  </svg>
+                </div>
+              </Tooltip>
+            </div>
+          )}
+        </div>
       </div>
+      
+      {/* Export Progress Indicator */}
+      {downloading && (
+        <div className="bg-blue-50 border-2 border-blue-200 rounded-xl p-4">
+          <div className="flex items-center gap-3">
+            <div className="animate-spin h-5 w-5 border-2 border-blue-600 border-t-transparent rounded-full"></div>
+            <span className="text-blue-700 font-medium">
+              Fetching all conversations... This may take a moment.
+            </span>
+          </div>
+        </div>
+      )}
 
       {/* Filters Card */}
       <div className="bg-gradient-to-br from-gray-50 to-white border-1 border-solid border-gray-200 rounded-xl p-6 shadow-sm">
@@ -45,16 +187,76 @@ export default function ConversationsTab({ onSelectConversation }) {
           </svg>
           <h3 className="text-sm font-semibold text-gray-700">Filter Options</h3>
         </div>
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">Results Limit</label>
-            <InputNumber
-              value={filters.limit}
-              onChange={(value) => setFilters({ ...filters, limit: value || 20 })}
-              min={1}
-              max={100}
+            <label className="block text-sm font-medium text-gray-700 mb-2">Message Type</label>
+            <Select
+              value={filters.lastMessageType}
+              onChange={(value) => setFilters({ ...filters, lastMessageType: value })}
               className="w-full"
               size="large"
+              placeholder="All Types"
+              options={[
+                { value: '', label: 'All Types' },
+                { value: 'TYPE_SMS', label: 'SMS' },
+                { value: 'TYPE_EMAIL', label: 'Email' },
+                { value: 'TYPE_CALL', label: 'Call' },
+                { value: 'TYPE_WHATSAPP', label: 'WhatsApp' },
+                { value: 'TYPE_FACEBOOK', label: 'Facebook' },
+                { value: 'TYPE_INSTAGRAM', label: 'Instagram' },
+                { value: 'TYPE_GMB', label: 'Google My Business' },
+                { value: 'TYPE_LIVE_CHAT', label: 'Live Chat' }
+              ]}
+            />
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">Direction</label>
+            <Select
+              value={filters.lastMessageDirection}
+              onChange={(value) => setFilters({ ...filters, lastMessageDirection: value })}
+              className="w-full"
+              size="large"
+              placeholder="All Directions"
+              options={[
+                { value: '', label: 'All Directions' },
+                { value: 'inbound', label: 'Inbound' },
+                { value: 'outbound', label: 'Outbound' }
+              ]}
+            />
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">Status</label>
+            <Select
+              value={filters.status}
+              onChange={(value) => setFilters({ ...filters, status: value })}
+              className="w-full"
+              size="large"
+              placeholder="All Status"
+              options={[
+                { value: '', label: 'All' },
+                { value: 'read', label: 'Read' },
+                { value: 'unread', label: 'Unread' },
+                { value: 'starred', label: 'Starred' },
+                { value: 'recents', label: 'Recents' }
+              ]}
+            />
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">Message Action</label>
+            <Select
+              value={filters.lastMessageAction}
+              onChange={(value) => setFilters({ ...filters, lastMessageAction: value })}
+              className="w-full"
+              size="large"
+              placeholder="All Actions"
+              options={[
+                { value: '', label: 'All' },
+                { value: 'manual', label: 'Manual' },
+                { value: 'automated', label: 'Automated' }
+              ]}
             />
           </div>
 
@@ -81,9 +283,42 @@ export default function ConversationsTab({ onSelectConversation }) {
               format="YYYY-MM-DD"
             />
           </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">Results Limit</label>
+            <Select
+              value={filters.limit}
+              onChange={(value) => setFilters({ ...filters, limit: value })}
+              className="w-full"
+              size="large"
+              options={[
+                { value: 20, label: '20' },
+                { value: 50, label: '50' },
+                { value: 100, label: '100' }
+              ]}
+            />
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">Sort By</label>
+            <Select
+              value={filters.sortBy}
+              onChange={(value) => setFilters({ ...filters, sortBy: value })}
+              className="w-full"
+              size="large"
+              options={[
+                { value: 'last_message_date', label: 'Last Message Date' },
+                { value: 'last_manual_message_date', label: 'Last Manual Message' },
+                { value: 'score_profile', label: 'Score Profile' }
+              ]}
+            />
+          </div>
           <div className="flex items-end">
             <button
-              onClick={() => refetch()}
+              onClick={() => {
+                setAppliedFilters({...filters}); // Apply current filters (create new object)
+                setShouldFetch(true); // Enable fetch
+              }}
               disabled={isLoading}
               className="w-full px-6 py-2.5 bg-gradient-to-r from-blue-600 to-blue-700 text-white rounded-lg hover:from-blue-700 hover:to-blue-800 transition-all shadow-md hover:shadow-lg disabled:opacity-50 font-medium"
             >
@@ -116,8 +351,20 @@ export default function ConversationsTab({ onSelectConversation }) {
         </div>
       )}
 
+      {/* No Results State */}
+      {error && error.message === 'NO_RESULTS_FOUND' && (
+        <div className="text-center py-20 bg-gradient-to-br from-yellow-50 to-orange-50 rounded-xl border-2 border-dashed border-yellow-300">
+          <div className="text-5xl mb-4">🔍</div>
+          <h3 className="text-lg font-semibold text-gray-900 mb-2">No Conversations Found</h3>
+          <p className="text-gray-600 mb-4">No conversations match your current filters</p>
+          <div className="text-sm text-gray-500">
+            <p>Try adjusting your filters or use different search criteria</p>
+          </div>
+        </div>
+      )}
+      
       {/* Error State */}
-      {error && (
+      {error && error.message !== 'NO_RESULTS_FOUND' && (
         <div className="bg-red-50 border-1 border-solid border-red-300 rounded-xl p-6 flex items-start gap-4">
           <div className="flex-shrink-0 w-10 h-10 bg-red-100 rounded-full flex items-center justify-center">
             <svg className="w-6 h-6 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -151,7 +398,6 @@ export default function ConversationsTab({ onSelectConversation }) {
                 onClick={() => onSelectConversation(conv)}
                 className="group bg-white border-1 border-solid border-gray-200 hover:border-blue-400 rounded-lg shadow-sm hover:shadow-md transition-all cursor-pointer border-2 border-solid border-blue-100"
               >
-                {console.log(conv)}
                 <div className="p-4">
                   <div className="flex items-center justify-between mb-3">
                     <div className="flex items-center gap-3">
@@ -184,14 +430,28 @@ export default function ConversationsTab({ onSelectConversation }) {
                   
                   {/* Message Preview */}
                   <p className="text-sm text-gray-600 mb-3 line-clamp-1 pl-13">
-                    {conv.lastMessage?.body || 'No messages yet'}
+                    {conv.lastMessageBody || 'No messages yet'}
                   </p>
                   
                   {/* Footer */}
                   <div className="flex items-center justify-between pl-13">
-                    <span className="text-xs text-gray-400">
-                      ID: {conv.id.slice(0, 16)}...
-                    </span>
+                    <div className="flex items-center gap-2">
+                      <Tooltip title="Click to copy full ID">
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            navigator.clipboard.writeText(conv.id);
+                            message.success('ID copied to clipboard!');
+                          }}
+                          className="flex items-center gap-1 text-xs text-gray-400 hover:text-blue-600 transition-colors group/copy"
+                        >
+                          <span className="font-mono">ID: {conv.id}</span>
+                          <svg className="w-3.5 h-3.5 opacity-0 group-hover/copy:opacity-100 transition-opacity" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
+                          </svg>
+                        </button>
+                      </Tooltip>
+                    </div>
                     <span className="text-sm text-blue-600 group-hover:text-blue-700 font-medium flex items-center gap-1">
                       View
                       <svg className="w-4 h-4 transform group-hover:translate-x-1 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">

@@ -17,7 +17,7 @@ const ImportJob = require('../models/ImportJob');
 // Configure multer for file uploads
 const upload = multer({
   dest: 'uploads/',
-  limits: { fileSize: 10 * 1024 * 1024 }, // 10MB limit
+  limits: { fileSize: 20 * 1024 * 1024 }, // 20MB limit
   fileFilter: (req, file, cb) => {
     const allowedTypes = ['.csv', '.xlsx', '.xls'];
     const ext = path.extname(file.originalname).toLowerCase();

@@ -14,7 +14,18 @@ const logger = require('../utils/logger');
  */
 router.get('/download', async (req, res) => {
   try {
-    const { locationId, limit = 20, startDate, endDate } = req.query;
+    const { 
+      locationId, 
+      limit = 20, 
+      startDate, 
+      endDate,
+      lastMessageType,
+      lastMessageDirection,
+      status,
+      lastMessageAction,
+      sortBy,
+      offset
+    } = req.query;
 
     if (!locationId) {
       return res.status(400).json({
@@ -23,14 +34,20 @@ router.get('/download', async (req, res) => {
       });
     }
 
-    logger.info('Downloading conversations for sub-account', { locationId, limit });
+    logger.info('Downloading conversations', { locationId, limit });
 
-    // Build filters
+    // Build filters with all parameters
     const filters = { limit };
     if (startDate) filters.startDate = startDate;
     if (endDate) filters.endDate = endDate;
+    if (lastMessageType) filters.lastMessageType = lastMessageType;
+    if (lastMessageDirection) filters.lastMessageDirection = lastMessageDirection;
+    if (status) filters.status = status;
+    if (lastMessageAction) filters.lastMessageAction = lastMessageAction;
+    if (sortBy) filters.sortBy = sortBy;
+    if (offset) filters.offset = offset;
 
-    // Fetch conversations from GHL
+    // Fetch conversations from API
     const result = await ghlService.searchConversations(locationId, filters);
 
     const conversations = result.conversations || [];

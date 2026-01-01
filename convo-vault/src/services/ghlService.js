@@ -317,15 +317,30 @@ class GHLService {
   }
 
   /**
-   * Search conversations
+   * Search conversations with advanced filters
+   * Reference: https://marketplace.gohighlevel.com/docs/ghl/conversations/search-conversation
    */
   async searchConversations(locationId, filters = {}) {
+    // Build query params with all supported filters
+    const params = {
+      locationId,
+      limit: filters.limit || 20,
+      ...filters
+    };
+
+    // Only include non-empty filters
+    Object.keys(params).forEach(key => {
+      if (params[key] === '' || params[key] === null || params[key] === undefined) {
+        delete params[key];
+      }
+    });
+
     return await this.apiRequest(
       'GET',
       '/conversations/search',
       locationId,
       null,
-      { locationId, ...filters }
+      params
     );
   }
 
@@ -407,7 +422,10 @@ class GHLService {
         params.contactId = options.contactId;
       }
 
-      logger.info('Exporting messages', { locationId, filters: Object.keys(options).length });
+      // Conversation filter
+      if (options.conversationId && options.conversationId !== 'undefined' && options.conversationId.trim()) {
+        params.conversationId = options.conversationId;
+      }
 
       const response = await this.apiRequest(
         'GET',
@@ -416,8 +434,6 @@ class GHLService {
         null,
         params
       );
-
-      console.log('Export response:', JSON.stringify(response, null, 2));
 
       return response;
     } catch (error) {

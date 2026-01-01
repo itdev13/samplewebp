@@ -17,12 +17,13 @@ router.get('/messages', async (req, res) => {
   try {
     const { 
       locationId, 
-      channel,      // SMS, Email, WhatsApp, Call, etc. (optional)
-      startDate,    // ISO date string
-      endDate,      // ISO date string
-      contactId,    // Specific contact
-      cursor,       // For pagination
-      limit = 100   // Messages per page
+      channel,         // SMS, Email, WhatsApp, Call, etc. (optional)
+      startDate,       // ISO date string
+      endDate,         // ISO date string
+      contactId,       // Specific contact
+      conversationId,  // Specific conversation
+      cursor,          // For pagination
+      limit = 100      // Messages per page
     } = req.query;
 
     if (!locationId) {
@@ -35,6 +36,7 @@ router.get('/messages', async (req, res) => {
     logger.info('Advanced message export', { 
       locationId, 
       channel, 
+      conversationId,
       hasDateFilter: !!(startDate && endDate)
     });
 
@@ -44,6 +46,7 @@ router.get('/messages', async (req, res) => {
     if (startDate) options.startDate = startDate;
     if (endDate) options.endDate = endDate;
     if (contactId) options.contactId = contactId;
+    if (conversationId) options.conversationId = conversationId; // Add conversationId filter
     if (cursor) options.cursor = cursor;
 
     // Export messages using advanced endpoint

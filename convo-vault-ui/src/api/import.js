@@ -39,8 +39,29 @@ export const importAPI = {
   /**
    * Download CSV template
    */
-  downloadTemplate: () => {
-    window.open('/api/import/template', '_blank');
+  downloadTemplate: async () => {
+    const token = localStorage.getItem('sessionToken');
+    
+    const response = await fetch('https://marketplace-fpq5.onrender.com/api/import/template', {
+      method: 'GET',
+      headers: {
+        'Authorization': `Bearer ${token}`
+      }
+    });
+    
+    if (!response.ok) {
+      throw new Error('Failed to download template');
+    }
+    
+    const blob = await response.blob();
+    const url = window.URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'import_template.csv';
+    document.body.appendChild(a);
+    a.click();
+    window.URL.revokeObjectURL(url);
+    document.body.removeChild(a);
   }
 };
 

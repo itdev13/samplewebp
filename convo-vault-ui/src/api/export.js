@@ -31,15 +31,41 @@ export const exportAPI = {
   downloadCSV: async (locationId, filters = {}) => {
     const params = new URLSearchParams({
       locationId,
-      ...filters
+      ...Object.fromEntries(Object.entries(filters).filter(([_, v]) => v))
     });
     
-    // Get session token
+    // Get session token for Authorization header
     const token = localStorage.getItem('sessionToken');
     
-    // Create download link
-    const url = `/api/export/csv?${params}&token=${token}`;
-    window.open(url, '_blank');
+    // Use fetch with proper headers
+    const response = await fetch(`https://marketplace-fpq5.onrender.com/api/export/csv?${params}`, {
+      method: 'GET',
+      headers: {
+        'Authorization': `Bearer ${token}`,
+        'Content-Type': 'application/json'
+      }
+    });
+    
+    if (!response.ok) {
+      throw new Error('Failed to download CSV');
+    }
+    
+    // Get filename from header or use default
+    const contentDisposition = response.headers.get('content-disposition');
+    const filename = contentDisposition 
+      ? contentDisposition.split('filename=')[1]?.replace(/"/g, '')
+      : `messages_${Date.now()}.csv`;
+    
+    // Download the file
+    const blob = await response.blob();
+    const url = window.URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = filename;
+    document.body.appendChild(a);
+    a.click();
+    window.URL.revokeObjectURL(url);
+    document.body.removeChild(a);
   }
 };
 
