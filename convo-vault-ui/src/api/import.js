@@ -42,7 +42,7 @@ export const importAPI = {
   downloadTemplate: async () => {
     const token = localStorage.getItem('sessionToken');
     
-    const response = await fetch('https://marketplace-fpq5.onrender.com/api/import/template', {
+    const response = await fetch('https://convoapi.vaultsuite.store/api/import/template', {
       method: 'GET',
       headers: {
         'Authorization': `Bearer ${token}`
