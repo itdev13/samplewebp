@@ -43,8 +43,8 @@ export const useGHLContext = () => {
                 }
                 resolvedRef.current = true;
                 
-                // Use Render.com for backend
-                const backendUrl = 'https://marketplace-fpq5.onrender.com';
+                // Production backend on AWS ALB
+                const backendUrl = 'https://convoapi.vaultsuite.store';
                 const decryptUrl = `${backendUrl}/api/auth/decrypt-user-data`;
                 
                 fetch(decryptUrl, {
@@ -130,7 +130,7 @@ export const useGHLContext = () => {
                 setLoading(false);
           } else {
             // No context available - redirect to about page on FRONTEND
-            window.location.href = 'https://convo-vault.vercel.app/about.html';
+            window.location.href = 'https://convo.vaultsuite.store/about.html';
           }
         }
       } catch (err) {

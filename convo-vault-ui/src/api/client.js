@@ -1,9 +1,9 @@
 import axios from 'axios';
 
 // Create axios instance
-// Use Render.com for backend
+// Production backend on AWS ALB
 const apiClient = axios.create({
-  baseURL: 'https://marketplace-fpq5.onrender.com/api',
+  baseURL: 'https://convoapi.vaultsuite.store/api',
   headers: {
     'Content-Type': 'application/json',
   },
