@@ -8,6 +8,7 @@ const path = require('path');
 const ghlService = require('../services/ghlService');
 const logger = require('../utils/logger');
 const ImportJob = require('../models/ImportJob');
+const { authenticateSession } = require('../middleware/auth');
 
 /**
  * FEATURE 3: Import from CSV/Excel to Conversations
@@ -34,7 +35,7 @@ const upload = multer({
  * @route POST /api/import/upload
  * @desc Upload CSV/Excel file and import to conversations
  */
-router.post('/upload', upload.single('file'), async (req, res) => {
+router.post('/upload', authenticateSession, upload.single('file'), async (req, res) => {
   try {
     const { locationId } = req.body;
 
@@ -408,7 +409,7 @@ async function importConversations(jobId, defaultLocationId, contacts) {
  * @route GET /api/import/template
  * @desc Download CSV template for imports
  */
-router.get('/template', (req, res) => {
+router.get('/template', authenticateSession, (req, res) => {
   const template = 'locationId,contactId,name,email,phone,companyName,address1,city,state,postalCode,country,website,timezone,dateOfBirth,gender,tags\n' +
                    'rf6ygZQRiMIa82DQ1H06,1q8IO9k4WJVhQ1Diajkl,,,,,,,,,,,,,\n' +
                    'rf6ygZQRiMIa82DQ1H06,,John Doe,john@example.com,+1234567890,Tech Corp,123 Main St,New York,NY,10001,US,https://techcorp.com,America/New_York,1990-01-15,male,vip\n' +
@@ -425,7 +426,7 @@ router.get('/template', (req, res) => {
  * @route GET /api/import/status/:jobId
  * @desc Get import job status
  */
-router.get('/status/:jobId', async (req, res) => {
+router.get('/status/:jobId', authenticateSession, async (req, res) => {
   try {
     const { jobId } = req.params;
 
@@ -468,7 +469,7 @@ router.get('/status/:jobId', async (req, res) => {
  * @route GET /api/import/jobs
  * @desc Get recent import jobs for location
  */
-router.get('/jobs', async (req, res) => {
+router.get('/jobs', authenticateSession, async (req, res) => {
   try {
     const { locationId } = req.query;
 

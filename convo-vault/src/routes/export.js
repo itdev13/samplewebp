@@ -2,6 +2,7 @@ const express = require('express');
 const router = express.Router();
 const ghlService = require('../services/ghlService');
 const logger = require('../utils/logger');
+const { authenticateSession } = require('../middleware/auth');
 
 /**
  * BONUS FEATURE: Advanced Message Export
@@ -13,7 +14,7 @@ const logger = require('../utils/logger');
  * @desc Export messages with advanced filtering and pagination
  * Includes conversationId in response for better context
  */
-router.get('/messages', async (req, res) => {
+router.get('/messages', authenticateSession, async (req, res) => {
   try {
     const { 
       locationId, 
@@ -97,7 +98,7 @@ router.get('/messages', async (req, res) => {
  * @desc Export ALL messages with automatic pagination
  * Handles cursor-based pagination automatically
  */
-router.get('/messages/all', async (req, res) => {
+router.get('/messages/all', authenticateSession, async (req, res) => {
   try {
     const { locationId, channel, startDate, endDate, contactId } = req.query;
 
@@ -165,7 +166,7 @@ router.get('/messages/all', async (req, res) => {
  * @route GET /api/export/csv
  * @desc Export messages as CSV format
  */
-router.get('/csv', async (req, res) => {
+router.get('/csv', authenticateSession, async (req, res) => {
   try {
     const { locationId, channel, startDate, endDate } = req.query;
 

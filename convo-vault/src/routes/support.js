@@ -4,6 +4,7 @@ const multer = require('multer');
 const nodemailer = require('nodemailer');
 const fs = require('fs');
 const logger = require('../utils/logger');
+const { authenticateSession } = require('../middleware/auth');
 
 // Configure multer for support attachments
 const upload = multer({
@@ -49,7 +50,7 @@ transporter.verify((error, success) => {
  * @route POST /api/support/ticket
  * @desc Submit support ticket
  */
-router.post('/ticket', upload.array('images', 5), async (req, res) => {
+router.post('/ticket', authenticateSession, upload.array('images', 5), async (req, res) => {
   try {
     const { name, email, subject, message, locationId, userId } = req.body;
 

@@ -2,6 +2,7 @@ const express = require('express');
 const router = express.Router();
 const ghlService = require('../services/ghlService');
 const logger = require('../utils/logger');
+const { authenticateSession } = require('../middleware/auth');
 
 /**
  * FEATURE 2: Get Conversation Messages
@@ -12,7 +13,7 @@ const logger = require('../utils/logger');
  * @route GET /api/messages/:conversationId
  * @desc Get all messages for a conversation
  */
-router.get('/:conversationId', async (req, res) => {
+router.get('/:conversationId', authenticateSession, async (req, res) => {
   try {
     const { conversationId } = req.params;
     const { locationId, limit = 100, lastMessageId, sortOrder = 'desc' } = req.query;
@@ -91,7 +92,7 @@ router.get('/:conversationId', async (req, res) => {
  * @route GET /api/messages/:conversationId/download
  * @desc Download ALL messages as CSV (with all fields from GHL API)
  */
-router.get('/:conversationId/download', async (req, res) => {
+router.get('/:conversationId/download', authenticateSession, async (req, res) => {
   try {
     const { conversationId } = req.params;
     const { locationId } = req.query;

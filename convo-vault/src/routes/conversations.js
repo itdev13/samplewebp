@@ -2,6 +2,7 @@ const express = require('express');
 const router = express.Router();
 const ghlService = require('../services/ghlService');
 const logger = require('../utils/logger');
+const { authenticateSession } = require('../middleware/auth');
 
 /**
  * FEATURE 1: Download Conversations
@@ -12,7 +13,7 @@ const logger = require('../utils/logger');
  * @route GET /api/conversations/download
  * @desc Download conversations for a location
  */
-router.get('/download', async (req, res) => {
+router.get('/download', authenticateSession, async (req, res) => {
   try {
     const { 
       locationId, 
@@ -88,7 +89,7 @@ router.get('/download', async (req, res) => {
  * @route GET /api/conversations/search
  * @desc Search conversations with filters
  */
-router.get('/search', async (req, res) => {
+router.get('/search', authenticateSession, async (req, res) => {
   try {
     const { locationId, ...filters } = req.query;
 
@@ -119,7 +120,7 @@ router.get('/search', async (req, res) => {
  * @route GET /api/conversations/:conversationId
  * @desc Get specific conversation details
  */
-router.get('/:conversationId', async (req, res) => {
+router.get('/:conversationId', authenticateSession, async (req, res) => {
   try {
     const { conversationId } = req.params;
     const { locationId } = req.query;
