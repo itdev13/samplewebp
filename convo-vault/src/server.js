@@ -49,9 +49,21 @@ class ConversationsManagerApp {
     this.app.use(express.urlencoded({ extended: true }));
     this.app.use(express.static(path.join(__dirname, '../public')));
 
-    // Request logging
+    // Request logging with response status
     this.app.use((req, res, next) => {
-      logger.info(`${req.method} ${req.path}`);
+      const startTime = Date.now();
+      
+      // Capture response when it's finished
+      res.on('finish', () => {
+        const duration = Date.now() - startTime;
+        const statusCode = res.statusCode;
+        const statusEmoji = statusCode >= 500 ? '🔴' : 
+                           statusCode >= 400 ? '🟡' : 
+                           statusCode >= 300 ? '🔵' : '🟢';
+        
+        logger.info(`${statusEmoji} ${req.method} ${req.path} → ${statusCode} (${duration}ms)`);
+      });
+      
       next();
     });
   }
