@@ -70,7 +70,7 @@ export default function MessagesTab() {
   const hasMore = data?.data?.pagination?.hasMore || false;
   const nextCursorValue = data?.data?.pagination?.nextCursor;
   const [downloading, setDownloading] = useState(false);
-  
+
   // Check if this is a "no results" situation
   const isNoResults = error && (
     error.message === 'NO_RESULTS_FOUND' ||

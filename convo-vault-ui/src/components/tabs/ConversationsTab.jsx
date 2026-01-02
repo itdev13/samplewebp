@@ -362,7 +362,7 @@ export default function ConversationsTab({ onSelectConversation }) {
           </div>
         </div>
       )}
-      
+
       {/* Error State */}
       {error && error.message !== 'NO_RESULTS_FOUND' && (
         <div className="bg-red-50 border-1 border-solid border-red-300 rounded-xl p-6 flex items-start gap-4">
