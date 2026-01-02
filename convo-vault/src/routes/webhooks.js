@@ -9,11 +9,11 @@ const logger = require('../utils/logger');
  */
 
 /**
- * @route POST /api/webhooks/ghl
- * @desc Handle GHL webhook events (AppInstall, AppUninstall)
+ * @route POST /api/webhooks/convo-vault
+ * @desc Handle ConvoVault webhook events (AppInstall, AppUninstall)
  * @access Public (GHL sends webhooks)
  */
-router.post('/ghl', async (req, res) => {
+router.post('/convo-vault', async (req, res) => {
   try {
     const webhookData = req.body;
     const { type, appId, companyId, locationId } = webhookData;
