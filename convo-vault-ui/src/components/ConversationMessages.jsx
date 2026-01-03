@@ -65,12 +65,22 @@ export default function ConversationMessages({ conversation, onBack }) {
         }
       }
       
-      // Convert to CSV
+      // Convert to CSV with formatted dates
       const csvHeaders = 'Date,Message ID,Type,Direction,Status,Message,Contact ID\n';
       const csvRows = allMessages.map(msg => {
-        const date = new Date(msg.dateAdded).toISOString();
+        const formattedDate = msg.dateAdded 
+          ? new Date(msg.dateAdded).toLocaleString('en-US', {
+              year: 'numeric',
+              month: 'short',
+              day: 'numeric',
+              hour: '2-digit',
+              minute: '2-digit',
+              second: '2-digit',
+              hour12: true
+            })
+          : '';
         const message = (msg.body || '').replace(/"/g, '""').replace(/\n/g, ' ');
-        return `"${date}","${msg.id}","${msg.type || ''}","${msg.direction || ''}","${msg.status || ''}","${message}","${msg.contactId || ''}"`;
+        return `"${formattedDate}","${msg.id}","${msg.type || ''}","${msg.direction || ''}","${msg.status || ''}","${message}","${msg.contactId || ''}"`;
       }).join('\n');
       
       const csv = csvHeaders + csvRows;

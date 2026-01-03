@@ -121,9 +121,19 @@ export default function MessagesTab() {
       // Convert to CSV
       const csvHeaders = 'Date,Conversation ID,Contact ID,Type,Direction,Status,Message\n';
       const csvRows = allMessages.map(msg => {
-        const date = new Date(msg.dateAdded).toISOString();
+        const formattedDate = msg.dateAdded 
+          ? new Date(msg.dateAdded).toLocaleString('en-US', {
+              year: 'numeric',
+              month: 'short',
+              day: 'numeric',
+              hour: '2-digit',
+              minute: '2-digit',
+              second: '2-digit',
+              hour12: true
+            })
+          : '';
         const message = (msg.body || '').replace(/"/g, '""').replace(/\n/g, ' ');
-        return `"${date}","${msg.conversationId || ''}","${msg.contactId || ''}","${msg.type || ''}","${msg.direction || ''}","${msg.status || ''}","${message}"`;
+        return `"${formattedDate}","${msg.conversationId || ''}","${msg.contactId || ''}","${msg.type || ''}","${msg.direction || ''}","${msg.status || ''}","${message}"`;
       }).join('\n');
       
       const csv = csvHeaders + csvRows;

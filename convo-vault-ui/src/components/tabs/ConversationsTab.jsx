@@ -90,11 +90,21 @@ export default function ConversationsTab({ onSelectConversation }) {
         }
       }
       
-      // Convert to CSV
-      const csvHeaders = 'ID,Contact Name,Contact ID,Last Message Date,Last Message,Unread Count,Type\n';
+      // Convert to CSV with formatted dates and all available fields
+      const csvHeaders = 'ID,Contact Name,Contact ID,Last Message Date,Last Message Type,Last Message Direction,Last Message,Unread Count,Status,Type\n';
       const csvRows = allConversations.map(conv => {
         const lastMessage = (conv.lastMessageBody || '').replace(/"/g, '""').replace(/\n/g, ' ');
-        return `"${conv.id}","${conv.contactName || ''}","${conv.contactId || ''}","${conv.lastMessageDate || ''}","${lastMessage}","${conv.unreadCount || 0}","${conv.type || ''}"`;
+        const formattedDate = conv.lastMessageDate 
+          ? new Date(conv.lastMessageDate).toLocaleString('en-US', {
+              year: 'numeric',
+              month: 'short',
+              day: 'numeric',
+              hour: '2-digit',
+              minute: '2-digit',
+              hour12: true
+            })
+          : '';
+        return `"${conv.id}","${conv.contactName || ''}","${conv.contactId || ''}","${formattedDate}","${conv.lastMessageType || ''}","${conv.lastMessageDirection || ''}","${lastMessage}","${conv.unreadCount || 0}","${conv.status || ''}","${conv.type || ''}"`;
       }).join('\n');
       
       const csv = csvHeaders + csvRows;

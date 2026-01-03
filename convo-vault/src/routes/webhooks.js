@@ -1,6 +1,8 @@
 const express = require('express');
 const router = express.Router();
 const Installation = require('../models/Installation');
+const OAuthToken = require('../models/OAuthToken');
+const DeletedOAuthToken = require('../models/DeletedOAuthToken');
 const logger = require('../utils/logger');
 
 /**
@@ -157,6 +159,9 @@ async function handleUninstall(data) {
         locationId 
       });
       
+      // SECURITY: Still archive and delete OAuth tokens even if no installation record
+      await archiveAndDeleteTokens(locationId, companyId, null, data);
+      
       // Create uninstall record anyway for tracking
       const uninstallRecord = new Installation({
         type: 'UNINSTALL',
@@ -188,6 +193,10 @@ async function handleUninstall(data) {
       companyId,
       locationId
     });
+    
+    // SECURITY: Archive OAuth tokens before deletion
+    // Keeps audit trail while preventing access
+    await archiveAndDeleteTokens(locationId, companyId, installation._id, data);
     
     return installation;
     
@@ -282,6 +291,72 @@ router.get('/installations/stats', async (req, res) => {
     });
   }
 });
+
+/**
+ * Archive OAuth tokens before deletion
+ * Keeps audit trail for 90 days then auto-deletes
+ */
+async function archiveAndDeleteTokens(locationId, companyId, installationId, webhookData) {
+  try {
+    const findQuery = locationId 
+      ? { locationId }
+      : { companyId };
+    
+    // Find all active tokens for this location/company
+    const tokensToArchive = await OAuthToken.find(findQuery);
+    
+    if (tokensToArchive.length === 0) {
+      logger.info('ℹ️ No OAuth tokens found to archive', { locationId, companyId });
+      return;
+    }
+    
+    logger.info(`📦 Archiving ${tokensToArchive.length} OAuth tokens before deletion`, {
+      locationId,
+      companyId
+    });
+    
+    // Archive each token to DeletedOAuthToken collection
+    const archivePromises = tokensToArchive.map(token => {
+      return DeletedOAuthToken.create({
+        companyId: token.companyId,
+        locationId: token.locationId,
+        accessToken: token.accessToken,
+        refreshToken: token.refreshToken,
+        originalCreatedAt: token.createdAt,
+        originalExpiresAt: token.expiresAt,
+        deletedAt: new Date(),
+        deletionReason: 'app_uninstall',
+        installationId: installationId,
+        uninstallWebhookData: webhookData
+      });
+    });
+    
+    await Promise.all(archivePromises);
+    
+    logger.info('✅ OAuth tokens archived successfully', {
+      count: tokensToArchive.length
+    });
+    
+    // Now delete the original tokens
+    const deleteResult = await OAuthToken.deleteMany(findQuery);
+    
+    logger.info('🔒 OAuth tokens deleted from active collection', { 
+      deletedCount: deleteResult.deletedCount,
+      locationId,
+      companyId
+    });
+    
+    logger.info('📊 Token cleanup complete', {
+      archived: tokensToArchive.length,
+      deleted: deleteResult.deletedCount,
+      autoDeleteAfter: '90 days'
+    });
+    
+  } catch (error) {
+    logger.error('❌ Failed to archive/delete OAuth tokens:', error);
+    // Don't throw - uninstall should succeed even if token archiving fails
+  }
+}
 
 module.exports = router;
 
