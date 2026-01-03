@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useAuth } from '../context/AuthContext';
 import Header from './Header';
 import ConversationsTab from './tabs/ConversationsTab';
@@ -10,16 +10,23 @@ import ConversationMessages from './ConversationMessages';
 
 export default function Dashboard() {
   const { location } = useAuth();
-  const [activeTab, setActiveTab] = useState('conversations');
+  
+  // Get saved tab from localStorage or default to 'conversations'
+  const savedTab = localStorage.getItem('activeTab') || 'conversations';
+  const [activeTab, setActiveTab] = useState(savedTab);
   const [selectedConversation, setSelectedConversation] = useState(null);
   const [showConversationView, setShowConversationView] = useState(false);
+
+  // Save active tab to localStorage whenever it changes
+  useEffect(() => {
+    localStorage.setItem('activeTab', activeTab);
+  }, [activeTab]);
 
   const tabs = [
     { id: 'conversations', label: 'Conversations', icon: '💬' },
     { id: 'messages', label: 'Messages & Export', icon: '📊' },
     { id: 'import', label: 'Import', icon: '📥' },
-    { id: 'support', label: 'Support', icon: '🆘' },
-    { id: 'api-docs', label: 'API Docs', icon: '📚', external: true }
+    { id: 'support', label: 'Support', icon: '🆘' }
   ];
 
   const handleConversationSelect = (conversation) => {
@@ -40,14 +47,8 @@ export default function Dashboard() {
                 <button
                   key={tab.id}
                   onClick={() => {
-                    if (tab.external) {
-                      // Open API docs in new window (stays within GHL iframe)
-                      const token = localStorage.getItem('sessionToken');
-                      window.open(`https://convoapi.vaultsuite.store/api/docs?token=${token}`, '_blank');
-                    } else {
-                      setActiveTab(tab.id);
-                      setShowConversationView(false); // Exit conversation view when switching tabs
-                    }
+                    setActiveTab(tab.id);
+                    setShowConversationView(false); // Exit conversation view when switching tabs
                   }}
                   className={`
                     relative flex items-center justify-center gap-3 px-8 py-4 border-b-3 font-semibold text-sm transition-all flex-1
@@ -59,8 +60,7 @@ export default function Dashboard() {
                 >
                   <span className="text-xl">{tab.icon}</span>
                   <span className="hidden sm:inline">{tab.label}</span>
-                  {tab.external && <span className="text-xs ml-1">📄</span>}
-                  {(activeTab === tab.id || (showConversationView && tab.id === 'conversations')) && !tab.external && (
+                  {(activeTab === tab.id || (showConversationView && tab.id === 'conversations')) && (
                     <div className="absolute bottom-0 left-0 right-0 h-1 bg-gradient-to-r from-blue-500 to-blue-600 rounded-t-full"></div>
                   )}
                 </button>
