@@ -54,7 +54,7 @@ const authLimiter = rateLimit({
 
 // Rate limiter for file uploads
 const uploadLimiter = rateLimit({
-  windowMs: 15 * 60 * 1000, // 30 minutes
+  windowMs: 15 * 60 * 1000, // 15 minutes
   max: 15, // Limit each user to 1 upload per 15 minutes
   message: {
     success: false,
