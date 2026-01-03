@@ -4,6 +4,7 @@ const Installation = require('../models/Installation');
 const OAuthToken = require('../models/OAuthToken');
 const DeletedOAuthToken = require('../models/DeletedOAuthToken');
 const logger = require('../utils/logger');
+const { authenticateSession } = require('../middleware/auth');
 
 /**
  * Webhook Endpoints for GHL Events
@@ -205,92 +206,6 @@ async function handleUninstall(data) {
     throw error;
   }
 }
-
-/**
- * @route GET /api/webhooks/installations
- * @desc Get all installations (for admin/debugging)
- * @access Protected
- */
-router.get('/installations', async (req, res) => {
-  try {
-    const { status, companyId, locationId, limit = 50, skip = 0 } = req.query;
-    
-    const query = {};
-    if (status) query.status = status;
-    if (companyId) query.companyId = companyId;
-    if (locationId) query.locationId = locationId;
-    
-    const installations = await Installation.find(query)
-      .sort({ createdAt: -1 })
-      .limit(parseInt(limit))
-      .skip(parseInt(skip))
-      .lean();
-    
-    const total = await Installation.countDocuments(query);
-    
-    res.json({
-      success: true,
-      data: installations,
-      pagination: {
-        total,
-        limit: parseInt(limit),
-        skip: parseInt(skip),
-        hasMore: total > (parseInt(skip) + parseInt(limit))
-      }
-    });
-    
-  } catch (error) {
-    logger.error('Error fetching installations:', error);
-    res.status(500).json({
-      success: false,
-      error: 'Failed to fetch installations'
-    });
-  }
-});
-
-/**
- * @route GET /api/webhooks/installations/stats
- * @desc Get installation statistics
- * @access Protected
- */
-router.get('/installations/stats', async (req, res) => {
-  try {
-    const stats = await Installation.aggregate([
-      {
-        $group: {
-          _id: '$status',
-          count: { $sum: 1 }
-        }
-      }
-    ]);
-    
-    const totalInstallations = await Installation.countDocuments();
-    const activeInstallations = await Installation.countDocuments({ status: 'active' });
-    const uninstalledInstallations = await Installation.countDocuments({ status: 'uninstalled' });
-    const trialInstallations = await Installation.countDocuments({ 
-      status: 'active',
-      'trial.onTrial': true 
-    });
-    
-    res.json({
-      success: true,
-      data: {
-        total: totalInstallations,
-        active: activeInstallations,
-        uninstalled: uninstalledInstallations,
-        onTrial: trialInstallations,
-        breakdown: stats
-      }
-    });
-    
-  } catch (error) {
-    logger.error('Error fetching installation stats:', error);
-    res.status(500).json({
-      success: false,
-      error: 'Failed to fetch statistics'
-    });
-  }
-});
 
 /**
  * Archive OAuth tokens before deletion
