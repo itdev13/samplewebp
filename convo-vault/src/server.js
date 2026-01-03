@@ -21,11 +21,13 @@ class ConversationsManagerApp {
   }
 
   setupMiddleware() {
-    // Configure Helmet to allow GHL iframe embedding
+    // Configure Helmet to allow GHL iframe embedding and inline scripts for docs
     this.app.use(helmet({
       contentSecurityPolicy: {
         directives: {
           ...helmet.contentSecurityPolicy.getDefaultDirectives(),
+          "script-src": ["'self'", "'unsafe-inline'"],
+          "script-src-attr": ["'unsafe-inline'"],
           "frame-ancestors": [
             "'self'",
             "https://*.gohighlevel.com",
