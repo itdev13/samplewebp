@@ -227,7 +227,7 @@ async function processImportAsync(jobId, defaultLocationId, contacts, filePath) 
       completedAt: new Date()
     });
 
-    logger.info(`✅ Import job ${jobId} completed: ${results.success} success, ${results.failed} failed`);
+    logger.info(`✅ Import job ${jobId} completed: ${results.success} created, ${results.skipped || 0} skipped, ${results.failed} failed`);
 
   } catch (error) {
     logger.error(`❌ Import job ${jobId} failed:`, error);
@@ -418,24 +418,40 @@ async function importConversations(jobId, defaultLocationId, contacts) {
         successful: results.success,
         failed: results.failed
       });
+      
+      // Log progress every 10 rows
+      if ((i + 1) % 10 === 0) {
+        logger.info(`📈 Progress: ${i + 1}/${contacts.length} rows processed (${results.success} created, ${results.skipped} skipped, ${results.failed} failed)`);
+      }
 
-      // Rate limiting
-      await new Promise(resolve => setTimeout(resolve, 200));
+      // Rate limiting - slower to avoid API throttling
+      await new Promise(resolve => setTimeout(resolve, 300));
 
     } catch (error) {
-      logger.error(`Row ${i + 1}: ❌`, error.message);
+      logger.error(`Row ${i + 1}: ❌ ${error.message}`, {
+        error: error.response?.data || error.message,
+        status: error.response?.status
+      });
+      
       results.failed++;
       results.errors.push({
         row: i + 1,
-        error: error.message,
+        error: error.response?.data?.message || error.message || 'Unknown error',
+        errorType: error.response?.status || 'unknown',
         data: {
           locationId: row.locationId || defaultLocationId,
           contactId: row.contactId || null,
           name: row.name || null,
           email: row.email || null,
-          phone: row.phone || null,
-          companyName: row.companyName || null
+          phone: row.phone || null
         }
+      });
+      
+      // Update job with error count
+      await ImportJob.findByIdAndUpdate(jobId, {
+        processed: i + 1,
+        successful: results.success,
+        failed: results.failed
       });
     }
   }
