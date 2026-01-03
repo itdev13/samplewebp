@@ -114,7 +114,7 @@ export function useInfoModal() {
     }, 300);
   };
 
-  const InfoModalComponent = () => (
+  const InfoModalComponent = isOpen ? (
     <InfoModal
       isOpen={isOpen}
       onClose={closeInfo}
@@ -122,7 +122,7 @@ export function useInfoModal() {
       message={message}
       details={details}
     />
-  );
+  ) : null;
 
   return { showInfo, closeInfo, InfoModalComponent };
 }

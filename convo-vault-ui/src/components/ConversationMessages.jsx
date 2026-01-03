@@ -222,8 +222,8 @@ export default function ConversationMessages({ conversation, onBack }) {
 
   return (
     <>
-      <ErrorModalComponent />
-      <InfoModalComponent />
+      {ErrorModalComponent}
+      {InfoModalComponent}
       <div className="space-y-6">
       {/* Conversation Header */}
       <div className="bg-gradient-to-r from-blue-600 to-indigo-600 rounded-xl p-6 shadow-lg text-white">
