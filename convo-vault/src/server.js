@@ -90,6 +90,10 @@ class ConversationsManagerApp {
     const webhookRoutes = require('./routes/webhooks');
     this.app.use('/api/webhooks', webhookRoutes);
 
+    // Protected API documentation route
+    const docsRoutes = require('./routes/docs');
+    this.app.use('/api/docs', docsRoutes);
+
     // Feature routes
     const conversationsRoutes = require('./routes/conversations');
     const messagesRoutes = require('./routes/messages');
