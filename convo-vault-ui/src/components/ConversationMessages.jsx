@@ -221,7 +221,10 @@ export default function ConversationMessages({ conversation, onBack }) {
   };
 
   return (
-    <div className="space-y-6">
+    <>
+      <ErrorModalComponent />
+      <InfoModalComponent />
+      <div className="space-y-6">
       {/* Conversation Header */}
       <div className="bg-gradient-to-r from-blue-600 to-indigo-600 rounded-xl p-6 shadow-lg text-white">
         <div className="flex items-center justify-between">
@@ -420,7 +423,8 @@ export default function ConversationMessages({ conversation, onBack }) {
           </div>
         </div>
       )}
-    </div>
+      </div>
+    </>
   );
 }
 
