@@ -54,12 +54,12 @@ const authLimiter = rateLimit({
 
 // Rate limiter for file uploads
 const uploadLimiter = rateLimit({
-  windowMs: 30 * 60 * 1000, // 30 minutes
-  max: 10, // Limit each user to 10 uploads per 30 minutes
+  windowMs: 15 * 60 * 1000, // 30 minutes
+  max: 15, // Limit each user to 1 upload per 15 minutes
   message: {
     success: false,
-    error: 'Upload limit exceeded. Maximum 10 files per 30 minutes.',
-    retryAfter: '1 hour'
+    error: 'Upload limit exceeded. Maximum 15 files per 15 minutes.',
+    retryAfter: '15 minutes'
   },
   handler: (req, res) => {
     logger.warn('Upload rate limit exceeded', {
@@ -68,27 +68,27 @@ const uploadLimiter = rateLimit({
     });
     res.status(429).json({
       success: false,
-      error: 'Upload limit exceeded. Maximum 10 files per 30 minutes.',
-      retryAfter: '30 minutes'
+      error: 'Upload limit exceeded. Maximum 15 files per 15 minutes.',
+      retryAfter: '15 minutes'
     });
   }
 });
 
 // Rate limiter for export/download endpoints
 const exportLimiter = rateLimit({
-  windowMs: 30 * 60 * 1000, // 30 minutes
-  max: 50, // Limit each user to 50 exports per 30 minutes
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  max: 50, // Limit each user to 50 exports per 15 minutes
   message: {
     success: false,
-    error: 'Export limit exceeded. Maximum 50 exports per 30 minutes.',
-    retryAfter: '30 minutes'
+    error: 'Export limit exceeded. Maximum 50 exports per 15 minutes.',
+    retryAfter: '15 minutes'
   }
 });
 
 // Webhook rate limiter (lenient for GHL webhooks)
 const webhookLimiter = rateLimit({
   windowMs: 60 * 1000, // 1 minute
-  max: 100, // Allow 100 webhooks per minute
+  max: 1000, // Allow 1000 webhooks per minute
   message: {
     success: false,
     error: 'Webhook rate limit exceeded'
