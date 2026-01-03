@@ -21,6 +21,7 @@ router.get('/download', authenticateSession, async (req, res) => {
       limit, 
       startDate, 
       endDate,
+      conversationId,
       lastMessageType,
       lastMessageDirection,
       status,
@@ -51,6 +52,22 @@ router.get('/download', authenticateSession, async (req, res) => {
       });
     }
 
+    // If specific conversationId provided, fetch that conversation directly
+    if (conversationId) {
+      logger.info('Fetching specific conversation by ID', { locationId, conversationId });
+      
+      const conversation = await ghlService.getConversation(locationId, conversationId);
+      
+      return res.json({
+        success: true,
+        message: 'Conversation retrieved successfully',
+        data: {
+          conversations: [conversation],
+          total: 1
+        }
+      });
+    }
+
     // Sanitize numeric parameters
     const sanitizedLimit = sanitizeLimit(limit, 20, 100);
     const sanitizedOffset = sanitizeOffset(offset, 0);
@@ -67,7 +84,6 @@ router.get('/download', authenticateSession, async (req, res) => {
     if (status) filters.status = status;
     if (lastMessageAction) filters.lastMessageAction = lastMessageAction;
     if (sortBy) filters.sortBy = sortBy;
-    if (offset) filters.offset = offset;
 
     // Fetch conversations from API
     const result = await ghlService.searchConversations(locationId, filters);
@@ -112,12 +128,27 @@ router.get('/download', authenticateSession, async (req, res) => {
  */
 router.get('/search', authenticateSession, async (req, res) => {
   try {
-    const { locationId, ...filters } = req.query;
+    const { locationId, conversationId, ...filters } = req.query;
 
     if (!locationId) {
       return res.status(400).json({
         success: false,
         error: 'locationId is required'
+      });
+    }
+
+    // If specific conversationId provided, fetch that conversation directly
+    if (conversationId) {
+      logger.info('Fetching specific conversation by ID', { locationId, conversationId });
+      
+      const conversation = await ghlService.getConversation(locationId, conversationId);
+      
+      return res.json({
+        success: true,
+        data: {
+          conversations: [conversation],
+          total: 1
+        }
       });
     }
 

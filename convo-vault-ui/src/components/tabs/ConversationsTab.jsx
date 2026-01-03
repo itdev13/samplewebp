@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { useAuth } from '../../context/AuthContext';
 import { conversationsAPI } from '../../api/conversations';
-import { DatePicker, Select, Button, Tooltip, message } from 'antd';
+import { DatePicker, Select, Button, Tooltip, message, Input } from 'antd';
 import { useErrorModal } from '../ErrorModal';
 import dayjs from 'dayjs';
 
@@ -12,6 +12,7 @@ export default function ConversationsTab({ onSelectConversation }) {
     limit: 20,
     startDate: '',
     endDate: '',
+    conversationId: '',
     lastMessageType: '',
     lastMessageDirection: '',
     status: '',
@@ -73,6 +74,7 @@ export default function ConversationsTab({ onSelectConversation }) {
           limit: exportLimit, // Use 100 for export, not user's filter limit
           startDate: filters.startDate,
           endDate: filters.endDate,
+          conversationId: filters.conversationId || undefined,
           offset: offset
         });
         
@@ -91,7 +93,7 @@ export default function ConversationsTab({ onSelectConversation }) {
       }
       
       // Convert to CSV with formatted dates and all available fields
-      const csvHeaders = 'ID,Contact Name,Contact ID,Last Message Date,Last Message Type,Last Message Direction,Last Message,Unread Count,Status,Type\n';
+      const csvHeaders = 'Conversation ID,Contact Name,Contact ID,Last Message Date,Last Message Type,Last Message Direction,Last Message,Unread Count,Status,Type\n';
       const csvRows = allConversations.map(conv => {
         const lastMessage = (conv.lastMessageBody || '').replace(/"/g, '""').replace(/\n/g, ' ');
         const formattedDate = conv.lastMessageDate 
@@ -200,15 +202,25 @@ export default function ConversationsTab({ onSelectConversation }) {
         </div>
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
           <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">Conversation ID</label>
+            <Input
+              value={filters.conversationId}
+              onChange={(e) => setFilters({ ...filters, conversationId: e.target.value })}
+              placeholder="Filter by conversation ID"
+              size="large"
+            />
+          </div>
+
+          <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">Message Type</label>
             <Select
               value={filters.lastMessageType}
               onChange={(value) => setFilters({ ...filters, lastMessageType: value })}
               className="w-full"
               size="large"
-              placeholder="All Types"
+              placeholder="All Types Except Email"
               options={[
-                { value: '', label: 'All Types' },
+                { value: '', label: 'All Types Except Email' },
                 { value: 'TYPE_SMS', label: 'SMS' },
                 { value: 'TYPE_EMAIL', label: 'Email' },
                 { value: 'TYPE_CALL', label: 'Call' },

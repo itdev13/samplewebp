@@ -66,7 +66,7 @@ export default function ConversationMessages({ conversation, onBack }) {
       }
       
       // Convert to CSV with formatted dates
-      const csvHeaders = 'Date,Message ID,Type,Direction,Status,Message,Contact ID\n';
+      const csvHeaders = 'Message Date,Message ID,Conversation ID,Message Type,Direction,Status,Message Body,Contact ID\n';
       const csvRows = allMessages.map(msg => {
         const formattedDate = msg.dateAdded 
           ? new Date(msg.dateAdded).toLocaleString('en-US', {
@@ -80,7 +80,7 @@ export default function ConversationMessages({ conversation, onBack }) {
             })
           : '';
         const message = (msg.body || '').replace(/"/g, '""').replace(/\n/g, ' ');
-        return `"${formattedDate}","${msg.id}","${msg.type || ''}","${msg.direction || ''}","${msg.status || ''}","${message}","${msg.contactId || ''}"`;
+        return `"${formattedDate}","${msg.id}","${msg.conversationId || ''}","${msg.type || ''}","${msg.direction || ''}","${msg.status || ''}","${message}","${msg.contactId || ''}"`;
       }).join('\n');
       
       const csv = csvHeaders + csvRows;

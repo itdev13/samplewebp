@@ -119,7 +119,7 @@ export default function MessagesTab() {
       }
       
       // Convert to CSV
-      const csvHeaders = 'Date,Conversation ID,Contact ID,Type,Direction,Status,Message\n';
+      const csvHeaders = 'Message Date,Conversation ID,Contact ID,Message Type,Direction,Status,Message Body\n';
       const csvRows = allMessages.map(msg => {
         const formattedDate = msg.dateAdded 
           ? new Date(msg.dateAdded).toLocaleString('en-US', {
