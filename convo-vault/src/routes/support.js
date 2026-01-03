@@ -5,6 +5,7 @@ const nodemailer = require('nodemailer');
 const fs = require('fs');
 const logger = require('../utils/logger');
 const { authenticateSession } = require('../middleware/auth');
+const { escapeHtml, isValidEmail } = require('../utils/sanitize');
 
 // Configure multer for support attachments
 const upload = multer({
@@ -62,20 +63,28 @@ router.post('/ticket', authenticateSession, upload.array('images', 5), async (re
       });
     }
 
-    logger.info('Support ticket received', { email, subject, locationId });
+    // Validate email format
+    if (!isValidEmail(email)) {
+      return res.status(400).json({
+        success: false,
+        error: 'Invalid email format'
+      });
+    }
 
-    // Prepare email content
+    logger.info('Support ticket received', { email: escapeHtml(email), subject: escapeHtml(subject), locationId });
+
+    // Prepare email content with HTML escaping to prevent XSS
     const emailHtml = `
       <h2>New Support Ticket - ConvoVault</h2>
       <hr/>
-      <p><strong>From:</strong> ${name || 'Not provided'}</p>
-      <p><strong>Email:</strong> ${email}</p>
-      <p><strong>Subject:</strong> ${subject}</p>
-      <p><strong>Location ID:</strong> ${locationId || 'Not provided'}</p>
-      <p><strong>User ID:</strong> ${userId || 'Not provided'}</p>
+      <p><strong>From:</strong> ${escapeHtml(name || 'Not provided')}</p>
+      <p><strong>Email:</strong> ${escapeHtml(email)}</p>
+      <p><strong>Subject:</strong> ${escapeHtml(subject)}</p>
+      <p><strong>Location ID:</strong> ${escapeHtml(locationId || 'Not provided')}</p>
+      <p><strong>User ID:</strong> ${escapeHtml(userId || 'Not provided')}</p>
       <hr/>
       <h3>Message:</h3>
-      <p>${message.replace(/\n/g, '<br/>')}</p>
+      <p>${escapeHtml(message).replace(/\n/g, '<br/>')}</p>
       ${req.files && req.files.length > 0 ? '<hr/><p><strong>Attachments:</strong> ' + req.files.length + ' image(s) attached</p>' : ''}
     `;
 

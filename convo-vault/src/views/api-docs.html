@@ -713,16 +713,20 @@
   </div>
 
   <script>
-    // Extract token from URL on page load
+    // Extract user token from URL on page load
     let currentToken = null;
     
     window.addEventListener('DOMContentLoaded', () => {
-      // Get token from URL parameter
+      // Get user token from URL parameter (ut = user token)
       const urlParams = new URLSearchParams(window.location.search);
-      currentToken = urlParams.get('token');
+      currentToken = urlParams.get('ut'); // User's session token
       
       if (currentToken) {
         document.getElementById('tokenDisplay').textContent = currentToken;
+        
+        // Clear token from URL for security (prevents logging in browser history)
+        const cleanUrl = window.location.origin + window.location.pathname;
+        window.history.replaceState({}, document.title, cleanUrl);
       } else {
         document.getElementById('tokenDisplay').textContent = 'No token provided';
         document.getElementById('tokenSection').style.display = 'none';

@@ -39,24 +39,43 @@ class ConversationsManagerApp {
       }
     }));
     
-    // CORS - Allow cloudflare tunnels and localhost
+    // CORS - Strict whitelist of allowed origins
     this.app.use(cors({
       origin: function(origin, callback) {
         // Allow requests with no origin (mobile apps, Postman, etc.)
         if (!origin) return callback(null, true);
         
-        // Allow localhost and cloudflare tunnels
-        if (origin.includes('localhost') || 
-            origin.includes('127.0.0.1') ||
-            origin.includes('trycloudflare.com') ||
-            origin.includes('gohighlevel.com') ||
-            origin.includes('vaultsuite.store') ||
-            origin.includes('vercel.app') ||
-            origin.includes('leadconnectorhq.com')) {
+        // Whitelist of allowed origins
+        const allowedOrigins = [
+          'http://localhost:5173',
+          'http://127.0.0.1:5173',
+          'https://convo.vaultsuite.store',
+          'https://convoapi.vaultsuite.store',
+        ];
+        
+        // Allow if origin matches whitelist or contains trusted domains
+        const isTrustedDomain = origin.includes('gohighlevel.com') ||
+                               origin.includes('leadconnectorhq.com') ||
+                               origin.includes('vaultsuite.store') ||
+                               origin.includes('vercel.app') ||
+                               (process.env.NODE_ENV === 'development' && (
+                                 origin.includes('localhost') ||
+                                 origin.includes('127.0.0.1') ||
+                                 origin.includes('trycloudflare.com')
+                               ));
+        
+        if (allowedOrigins.includes(origin) || isTrustedDomain) {
           return callback(null, true);
         }
         
-        callback(null, true); // Allow all for development
+        // Reject unknown origins in production
+        if (process.env.NODE_ENV === 'production') {
+          logger.warn('CORS blocked origin:', origin);
+          return callback(new Error('Not allowed by CORS'));
+        }
+        
+        // Allow all in development only
+        callback(null, true);
       },
       credentials: true
     }));
@@ -85,7 +104,10 @@ class ConversationsManagerApp {
   }
 
   setupRoutes() {
-    // Health check
+    // Import rate limiters
+    const { apiLimiter, authLimiter, uploadLimiter, exportLimiter, webhookLimiter } = require('./middleware/rateLimiter');
+    
+    // Health check (no rate limit)
     this.app.get('/health', (req, res) => {
       res.json({ 
         status: 'healthy',
@@ -94,34 +116,34 @@ class ConversationsManagerApp {
       });
     });
 
-    // OAuth routes
+    // OAuth routes (no rate limit - GHL handles this)
     const oauthRoutes = require('./routes/oauth');
     this.app.use('/oauth', oauthRoutes);
 
-    // Auth routes (for dashboard session management)
+    // Auth routes (strict rate limiting)
     const authRoutes = require('./routes/auth');
-    this.app.use('/api/auth', authRoutes);
+    this.app.use('/api/auth', authLimiter, authRoutes);
 
-    // Webhook routes (must be before other routes - no auth required)
+    // Webhook routes (lenient rate limiting)
     const webhookRoutes = require('./routes/webhooks');
-    this.app.use('/api/webhooks', webhookRoutes);
+    this.app.use('/api/webhooks', webhookLimiter, webhookRoutes);
 
-    // Protected API documentation route
+    // Protected API documentation route (general rate limit)
     const docsRoutes = require('./routes/docs');
-    this.app.use('/api/docs', docsRoutes);
+    this.app.use('/api/docs', apiLimiter, docsRoutes);
 
-    // Feature routes
+    // Feature routes with rate limiting
     const conversationsRoutes = require('./routes/conversations');
     const messagesRoutes = require('./routes/messages');
     const importRoutes = require('./routes/import');
     const exportRoutes = require('./routes/export');
     const supportRoutes = require('./routes/support');
 
-    this.app.use('/api/conversations', conversationsRoutes);
-    this.app.use('/api/messages', messagesRoutes);
-    this.app.use('/api/import', importRoutes);
-    this.app.use('/api/export', exportRoutes);
-    this.app.use('/api/support', supportRoutes);
+    this.app.use('/api/conversations', apiLimiter, conversationsRoutes);
+    this.app.use('/api/messages', apiLimiter, messagesRoutes);
+    this.app.use('/api/import', uploadLimiter, importRoutes);
+    this.app.use('/api/export', exportLimiter, exportRoutes);
+    this.app.use('/api/support', apiLimiter, supportRoutes);
 
     // Root
     this.app.get('/', (req, res) => {

@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { authAPI } from '../api/auth';
+import { docsAPI } from '../api/docs';
 
 export default function Header() {
   const { location, ghlContext } = useAuth();
@@ -29,9 +30,20 @@ export default function Header() {
     window.location.href = `${window.location.pathname}?location_id=${newLocationId}&company_id=${ghlContext.companyId}&user_id=${ghlContext.userId}`;
   };
 
-  const openApiDocs = () => {
-    const token = localStorage.getItem('sessionToken');
-    window.open(`https://convoapi.vaultsuite.store/api/docs?token=${token}`, '_blank');
+  const openApiDocs = async () => {
+    try {
+      // Request temporary docs access token from backend
+      const { docsToken, userToken } = await docsAPI.getAccess();
+      
+      // Open docs with short-lived docs token (t) and user's API token (ut)
+      // The docs token expires in 5 minutes, user token is for API testing
+      const docsUrl = `https://convoapi.vaultsuite.store/api/docs?t=${docsToken}&ut=${encodeURIComponent(userToken)}`;
+      window.open(docsUrl, '_blank');
+      
+    } catch (error) {
+      console.error('Error opening API docs:', error);
+      alert('Failed to access API documentation. Please try again.');
+    }
   };
 
   return (

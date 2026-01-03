@@ -3,6 +3,7 @@ const router = express.Router();
 const ghlService = require('../services/ghlService');
 const logger = require('../utils/logger');
 const { authenticateSession } = require('../middleware/auth');
+const { sanitizeLimit, isValidDate } = require('../utils/sanitize');
 
 /**
  * BONUS FEATURE: Advanced Message Export
@@ -24,7 +25,7 @@ router.get('/messages', authenticateSession, async (req, res) => {
       contactId,       // Specific contact
       conversationId,  // Specific conversation
       cursor,          // For pagination
-      limit = 100      // Messages per page
+      limit      // Messages per page
     } = req.query;
 
     if (!locationId) {
@@ -34,15 +35,34 @@ router.get('/messages', authenticateSession, async (req, res) => {
       });
     }
 
+    // Validate date formats
+    if (startDate && !isValidDate(startDate)) {
+      return res.status(400).json({
+        success: false,
+        error: 'Invalid startDate format. Use ISO 8601 format.'
+      });
+    }
+
+    if (endDate && !isValidDate(endDate)) {
+      return res.status(400).json({
+        success: false,
+        error: 'Invalid endDate format. Use ISO 8601 format.'
+      });
+    }
+
+    // Sanitize limit (max 500 for export)
+    const sanitizedLimit = sanitizeLimit(limit, 100, 500);
+
     logger.info('Advanced message export', { 
       locationId, 
       channel, 
       conversationId,
-      hasDateFilter: !!(startDate && endDate)
+      hasDateFilter: !!(startDate && endDate),
+      limit: sanitizedLimit
     });
 
     // Build export options
-    const options = { limit: parseInt(limit) };
+    const options = { limit: sanitizedLimit };
     if (channel) options.channel = channel;
     if (startDate) options.startDate = startDate;
     if (endDate) options.endDate = endDate;

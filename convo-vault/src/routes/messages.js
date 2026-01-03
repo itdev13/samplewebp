@@ -3,6 +3,7 @@ const router = express.Router();
 const ghlService = require('../services/ghlService');
 const logger = require('../utils/logger');
 const { authenticateSession } = require('../middleware/auth');
+const { sanitizeLimit } = require('../utils/sanitize');
 
 /**
  * FEATURE 2: Get Conversation Messages
@@ -16,7 +17,7 @@ const { authenticateSession } = require('../middleware/auth');
 router.get('/:conversationId', authenticateSession, async (req, res) => {
   try {
     const { conversationId } = req.params;
-    const { locationId, limit = 100, lastMessageId, sortOrder = 'desc' } = req.query;
+    const { locationId, limit, lastMessageId, sortOrder = 'desc' } = req.query;
 
     if (!locationId) {
       return res.status(400).json({
@@ -25,11 +26,14 @@ router.get('/:conversationId', authenticateSession, async (req, res) => {
       });
     }
 
-    logger.info('Getting messages for sub-account', { conversationId, locationId, lastMessageId });
+    // Sanitize limit (max 500 for messages)
+    const sanitizedLimit = sanitizeLimit(limit, 100, 500);
+
+    logger.info('Getting messages for sub-account', { conversationId, locationId, lastMessageId, limit: sanitizedLimit });
 
     // Fetch messages from GHL with pagination support
     const result = await ghlService.getMessages(locationId, conversationId, {
-      limit: parseInt(limit),
+      limit: sanitizedLimit,
       lastMessageId,
       sortOrder
     });

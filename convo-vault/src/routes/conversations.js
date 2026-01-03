@@ -3,6 +3,7 @@ const router = express.Router();
 const ghlService = require('../services/ghlService');
 const logger = require('../utils/logger');
 const { authenticateSession } = require('../middleware/auth');
+const { sanitizeLimit, sanitizeOffset, isValidDate } = require('../utils/sanitize');
 
 /**
  * FEATURE 1: Download Conversations
@@ -17,7 +18,7 @@ router.get('/download', authenticateSession, async (req, res) => {
   try {
     const { 
       locationId, 
-      limit = 20, 
+      limit, 
       startDate, 
       endDate,
       lastMessageType,
@@ -35,12 +36,32 @@ router.get('/download', authenticateSession, async (req, res) => {
       });
     }
 
-    logger.info('Downloading conversations', { locationId, limit });
+    // Validate date formats
+    if (startDate && !isValidDate(startDate)) {
+      return res.status(400).json({
+        success: false,
+        error: 'Invalid startDate format. Use ISO 8601 format.'
+      });
+    }
+
+    if (endDate && !isValidDate(endDate)) {
+      return res.status(400).json({
+        success: false,
+        error: 'Invalid endDate format. Use ISO 8601 format.'
+      });
+    }
+
+    // Sanitize numeric parameters
+    const sanitizedLimit = sanitizeLimit(limit, 20, 100);
+    const sanitizedOffset = sanitizeOffset(offset, 0);
+
+    logger.info('Downloading conversations', { locationId, limit: sanitizedLimit });
 
     // Build filters with all parameters
-    const filters = { limit };
+    const filters = { limit: sanitizedLimit };
     if (startDate) filters.startDate = startDate;
     if (endDate) filters.endDate = endDate;
+    if (sanitizedOffset > 0) filters.offset = sanitizedOffset;
     if (lastMessageType) filters.lastMessageType = lastMessageType;
     if (lastMessageDirection) filters.lastMessageDirection = lastMessageDirection;
     if (status) filters.status = status;
