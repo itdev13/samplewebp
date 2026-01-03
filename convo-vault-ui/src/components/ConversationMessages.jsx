@@ -98,8 +98,8 @@ export default function ConversationMessages({ conversation, onBack }) {
         fetchMessages('Email') // channel=Email = email messages only
       ]);
       
-      // Helper to safely format dates
-      const formatDate = (dateValue) => {
+      // Helper to safely format dates for CSV (detailed format)
+      const formatDateForCsv = (dateValue) => {
         if (!dateValue) return '';
         try {
           const date = new Date(dateValue);
@@ -122,7 +122,7 @@ export default function ConversationMessages({ conversation, onBack }) {
       if (regularMessages.length > 0) {
         const csvHeaders = 'Message Date,Message ID,Conversation ID,Message Type,Direction,Status,Message Body,Contact ID\n';
         const csvRows = regularMessages.map(msg => {
-          const formattedDate = formatDate(msg.dateAdded);
+          const formattedDate = formatDateForCsv(msg.dateAdded);
           const message = (msg.body || '').replace(/"/g, '""').replace(/\n/g, ' ');
           return `"${formattedDate}","${msg.id}","${msg.conversationId || ''}","${msg.type || ''}","${msg.direction || ''}","${msg.status || ''}","${message}","${msg.contactId || ''}"`;
         }).join('\n');
@@ -145,7 +145,7 @@ export default function ConversationMessages({ conversation, onBack }) {
         
         const csvHeaders = 'Message Date,Message ID,Conversation ID,Subject,From,To,CC,BCC,Direction,Status,Message Body,Contact ID\n';
         const csvRows = emailMessages.map(msg => {
-          const formattedDate = formatDate(msg.dateAdded);
+          const formattedDate = formatDateForCsv(msg.dateAdded);
           const message = (msg.body || '').replace(/"/g, '""').replace(/\n/g, ' ');
           const subject = (msg.subject || msg.meta?.email?.subject || '').replace(/"/g, '""');
           const from = msg.from || msg.meta?.email?.from || msg.meta?.from || '';
