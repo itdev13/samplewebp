@@ -221,7 +221,206 @@ export default function ConversationMessages({ conversation, onBack }) {
   };
 
   return (
-   <div>hi</div>
+    <div className="space-y-6">
+      {/* Conversation Header */}
+      <div className="bg-gradient-to-r from-blue-600 to-indigo-600 rounded-xl p-6 shadow-lg text-white">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-4">
+            <button
+              onClick={onBack}
+              className="p-2 hover:bg-white/10 rounded-lg transition-colors"
+            >
+              <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" />
+              </svg>
+            </button>
+            <div className="w-14 h-14 bg-white/20 backdrop-blur rounded-full flex items-center justify-center text-2xl font-bold border-2 border-white/30">
+              {(conversation.contactName || 'U')[0].toUpperCase()}
+            </div>
+            <div>
+              <h2 className="text-2xl font-bold">
+                {conversation.contactName || 'Unknown Contact'}
+              </h2>
+              <p className="text-blue-100 text-sm mt-1">
+                Conversation ID: {conversation.id}
+              </p>
+            </div>
+          </div>
+          <div className="flex items-center gap-2">
+            <Button
+              onClick={handleDownload}
+              loading={downloading}
+              size="large"
+              className="bg-white text-blue-600 hover:bg-blue-50"
+              icon={
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+                </svg>
+              }
+            >
+              {downloading ? 'Exporting...' : 'Export CSV'}
+            </Button>
+            <Tooltip 
+              title={
+                <div style={{ fontSize: '13px', lineHeight: '1.6' }}>
+                  <strong>📧 Email Messages Export</strong>
+                  <br />
+                  If this conversation contains email messages, they will be downloaded as a separate CSV file.
+                  <br /><br />
+                  You'll receive:
+                  <br />
+                  • <strong>messages.csv</strong> - SMS, WhatsApp, etc.
+                  <br />
+                  • <strong>emails.csv</strong> - Email messages (if any)
+                </div>
+              }
+              placement="left"
+            >
+              <div className="w-8 h-8 bg-white rounded-full flex items-center justify-center cursor-help border-2 border-blue-200">
+                <svg className="w-5 h-5 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+              </div>
+            </Tooltip>
+          </div>
+        </div>
+      </div>
+
+      {/* Export Progress */}
+      {downloading && (
+        <div className="bg-blue-50 border-2 border-blue-200 rounded-xl p-4">
+          <div className="flex items-center gap-3">
+            <div className="animate-spin h-5 w-5 border-2 border-blue-600 border-t-transparent rounded-full"></div>
+            <div className="flex-1">
+              <span className="text-blue-700 font-medium block">
+                Fetching all messages from this conversation...
+              </span>
+              <span className="text-blue-600 text-sm block mt-1">
+                ℹ️ Email messages will be exported to a separate CSV file
+              </span>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Loading */}
+      {isLoading && (
+        <div className="text-center py-16">
+          <div className="animate-spin rounded-full h-12 w-12 border-4 border-blue-600 border-t-transparent mx-auto mb-4"></div>
+          <p className="text-gray-600">Loading messages...</p>
+        </div>
+      )}
+
+      {/* Error */}
+      {error && (
+        <div className="bg-red-50 border-1 border-solid border-red-300 rounded-xl p-6">
+          <p className="text-red-700">Error: {error.message}</p>
+        </div>
+      )}
+
+      {/* Pagination Controls */}
+      {!isLoading && !error && messages.length > 0 && (
+        <div className="flex items-center justify-between bg-white border-1 border-solid border-gray-200 rounded-xl p-4">
+          <div className="flex items-center gap-3">
+            <span className="text-sm font-medium">Page Size:</span>
+            <Select
+              value={pageSize}
+              onChange={(value) => {
+                setPageSize(value);
+                setLastMessageId(null);
+              }}
+              size="large"
+              style={{ width: 100 }}
+              options={[
+                { value: 20, label: '20' },
+                { value: 50, label: '50' },
+                { value: 100, label: '100' }
+              ]}
+            />
+          </div>
+          <div className="flex gap-2">
+            <Button onClick={() => setLastMessageId(null)} disabled={!lastMessageId} size="large">
+              Previous
+            </Button>
+            <Button onClick={() => setLastMessageId(nextCursor)} disabled={!hasMore} type="primary" size="large">
+              Next
+            </Button>
+          </div>
+        </div>
+      )}
+
+      {/* Messages */}
+      {!isLoading && !error && messages.length > 0 && (
+        <div className="bg-white rounded-xl border-1 border-solid border-gray-200 p-6 min-h-[400px] space-y-4">
+          {messages.map((message) => {
+            const isOutbound = message.direction === 'outbound';
+            return (
+              <div key={message.id} className={`flex ${isOutbound ? 'justify-end' : 'justify-start'}`}>
+                <div
+                  className={`max-w-[70%] rounded-2xl px-5 py-3 shadow-sm ${
+                    isOutbound
+                      ? 'bg-gradient-to-br from-blue-600 to-blue-700 text-white'
+                      : 'bg-gray-100 text-gray-900'
+                  }`}
+                >
+                  <div className={`text-xs mb-1 flex items-center gap-1.5 ${isOutbound ? 'text-blue-100' : 'text-gray-500'}`}>
+                    <span>{getMessageTypeIcon(message.type)}</span>
+                    <span>{getMessageTypeDisplay(message.type)}</span>
+                    <span>•</span>
+                    <span>{formatDate(message.dateAdded)}</span>
+                  </div>
+                  
+                  {/* Email Thread Notice */}
+                  {(message.type === 'TYPE_EMAIL' || message.type === 'Email' || message.type === 3) && 
+                   message.meta?.email?.message_ids && 
+                   message.meta.email.message_ids.length > 1 && (
+                    <div className={`text-xs mb-2 px-2 py-1 rounded flex items-center gap-1.5 ${
+                      isOutbound ? 'bg-blue-500/20 text-blue-100' : 'bg-blue-50 text-blue-700'
+                    }`}>
+                      <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                      </svg>
+                      <span className="font-medium">
+                        Email Thread ({message.meta.email.message_ids.length} messages) - Download to view full thread
+                      </span>
+                    </div>
+                  )}
+                  
+                  <div className="text-sm">{message.body}</div>
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      )}
+
+      {/* No Messages State */}
+      {!isLoading && !error && messages.length === 0 && (
+        <div className="bg-white rounded-xl border-1 border-solid border-gray-200 p-12 min-h-[400px] flex items-center justify-center">
+          <div className="text-center">
+            <div className="text-6xl mb-4">💬</div>
+            <h3 className="text-xl font-semibold text-gray-900 mb-2">No Messages Found</h3>
+            <p className="text-gray-500 mb-6">This conversation doesn't have any messages yet</p>
+            <button
+              onClick={onBack}
+              className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+            >
+              Back to Conversations
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* Footer Stats */}
+      {messages.length > 0 && (
+        <div className="bg-gray-50 border-1 border-solid border-gray-200 rounded-xl p-4">
+          <div className="text-sm text-gray-600">
+            💬 {messages.length} messages • {messages.filter(m => m.direction === 'inbound').length} received • {messages.filter(m => m.direction === 'outbound').length} sent
+            {hasMore && <span className="ml-4 text-blue-600">• More available</span>}
+          </div>
+        </div>
+      )}
+    </div>
   );
 }
 
