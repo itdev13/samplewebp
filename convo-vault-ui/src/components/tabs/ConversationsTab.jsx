@@ -232,7 +232,7 @@ export default function ConversationsTab({ onSelectConversation }) {
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">Message Type</label>
+            <label className="block text-sm font-medium text-gray-700 mb-2">Last Message Type</label>
             <Select
               value={filters.lastMessageType}
               onChange={(value) => setFilters({ ...filters, lastMessageType: value })}
@@ -254,7 +254,7 @@ export default function ConversationsTab({ onSelectConversation }) {
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">Direction</label>
+            <label className="block text-sm font-medium text-gray-700 mb-2">Last Message Direction</label>
             <Select
               value={filters.lastMessageDirection}
               onChange={(value) => setFilters({ ...filters, lastMessageDirection: value })}
@@ -270,7 +270,7 @@ export default function ConversationsTab({ onSelectConversation }) {
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">Status</label>
+            <label className="block text-sm font-medium text-gray-700 mb-2">Conversation Status</label>
             <Select
               value={filters.status}
               onChange={(value) => setFilters({ ...filters, status: value })}
@@ -288,7 +288,7 @@ export default function ConversationsTab({ onSelectConversation }) {
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">Message Action</label>
+            <label className="block text-sm font-medium text-gray-700 mb-2">Last Message Action</label>
             <Select
               value={filters.lastMessageAction}
               onChange={(value) => setFilters({ ...filters, lastMessageAction: value })}

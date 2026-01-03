@@ -4,6 +4,7 @@ import { useAuth } from '../../context/AuthContext';
 import { exportAPI } from '../../api/export';
 import { Button, Select, DatePicker, Input, Tooltip } from 'antd';
 import { useErrorModal } from '../ErrorModal';
+import { getMessageTypeDisplay, getMessageTypeIcon } from '../../utils/messageTypes';
 import dayjs from 'dayjs';
 
 export default function MessagesTab() {
@@ -418,8 +419,9 @@ export default function MessagesTab() {
                           <span className="font-semibold text-gray-900">
                             {isOutbound ? 'Outbound' : 'Inbound'}
                           </span>
-                          <span className="text-xs bg-blue-100 text-blue-700 px-2 py-0.5 rounded">
-                            {message.type || 'SMS'}
+                          <span className="text-xs bg-blue-100 text-blue-700 px-2 py-0.5 rounded flex items-center gap-1">
+                            <span>{getMessageTypeIcon(message.type)}</span>
+                            <span>{getMessageTypeDisplay(message.type)}</span>
                           </span>
                           {message.status && (
                             <span className={`text-xs px-2 py-0.5 rounded ${
@@ -437,6 +439,20 @@ export default function MessagesTab() {
                           {new Date(message.dateAdded).toLocaleString()}
                         </span>
                       </div>
+
+                      {/* Email Thread Notice */}
+                      {(message.type === 'TYPE_EMAIL' || message.type === 'Email' || message.type === 3) && 
+                       message.meta?.email?.message_ids && 
+                       message.meta.email.message_ids.length > 1 && (
+                        <div className="mb-2 px-3 py-1.5 bg-blue-50 border border-blue-200 rounded-lg flex items-center gap-2 text-xs text-blue-700">
+                          <svg className="w-4 h-4 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+                          </svg>
+                          <span className="font-medium">
+                            📧 Email Thread ({message.meta.email.message_ids.length} messages) - Download from Conversation view to get full thread
+                          </span>
+                        </div>
+                      )}
 
                       <p className="text-sm text-gray-700 mb-2">{message.body}</p>
 
