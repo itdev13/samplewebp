@@ -15,6 +15,18 @@ export default function ConversationMessages({ conversation, onBack }) {
   const [downloading, setDownloading] = useState(false);
   const { showError, ErrorModalComponent } = useErrorModal();
   const { showInfo, InfoModalComponent } = useInfoModal();
+  
+  // Helper to safely format dates (reused in display and export)
+  const formatDate = (dateValue) => {
+    if (!dateValue) return 'No date';
+    try {
+      const date = new Date(dateValue);
+      if (isNaN(date.getTime())) return 'Invalid date';
+      return date.toLocaleString();
+    } catch (e) {
+      return 'Invalid date';
+    }
+  };
 
   const { data, isLoading, error } = useQuery({
     queryKey: ['conversation-messages', conversation?.id, location?.id, pageSize, lastMessageId],
@@ -357,7 +369,7 @@ export default function ConversationMessages({ conversation, onBack }) {
                     <span>{getMessageTypeIcon(message.type)}</span>
                     <span>{getMessageTypeDisplay(message.type)}</span>
                     <span>•</span>
-                    <span>{new Date(message.dateAdded).toLocaleString()}</span>
+                    <span>{formatDate(message.dateAdded)}</span>
                   </div>
                   
                   {/* Email Thread Notice */}

@@ -64,8 +64,8 @@ const deletedOAuthTokenSchema = new mongoose.Schema({
   // Auto-delete after 90 days for compliance
   autoDeleteAt: {
     type: Date,
-    default: () => new Date(Date.now() + 90 * 24 * 60 * 60 * 1000), // 90 days
-    index: true
+    default: () => new Date(Date.now() + 90 * 24 * 60 * 60 * 1000) // 90 days
+    // Note: Index created separately below with TTL
   }
   
 }, {

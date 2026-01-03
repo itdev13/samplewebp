@@ -41,7 +41,7 @@ const importJobSchema = new mongoose.Schema({
     default: 'pending'
   },
 
-  errors: [{
+  importErrors: [{
     row: Number,
     error: String,
     data: Object
@@ -51,7 +51,8 @@ const importJobSchema = new mongoose.Schema({
   completedAt: Date
 
 }, {
-  timestamps: true
+  timestamps: true,
+  suppressReservedKeysWarning: true // Suppress warnings for compatibility
 });
 
 // Get recent jobs for a location

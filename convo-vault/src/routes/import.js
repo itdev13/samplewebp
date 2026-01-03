@@ -233,7 +233,7 @@ async function processImportAsync(jobId, defaultLocationId, contacts, filePath) 
       status: 'completed',
       successful: results.success,
       failed: results.failed,
-      errors: results.errors,
+      importErrors: results.importErrors,
       completedAt: new Date()
     });
 
@@ -248,7 +248,7 @@ async function processImportAsync(jobId, defaultLocationId, contacts, filePath) 
     
     await ImportJob.findByIdAndUpdate(jobId, {
       status: 'failed',
-      errors: [{ row: 0, error: error.message || 'Import processing failed' }],
+      importErrors: [{ row: 0, error: error.message || 'Import processing failed' }],
       completedAt: new Date()
     });
   } finally {
@@ -267,7 +267,7 @@ async function importConversations(jobId, defaultLocationId, contacts) {
     success: 0,
     failed: 0,
     skipped: 0,
-    errors: []
+    importErrors: []
   };
 
   // Cache for validated locations (check once per unique locationId)
@@ -286,7 +286,7 @@ async function importConversations(jobId, defaultLocationId, contacts) {
       
       if (!locationId) {
         results.failed++;
-        results.errors.push({
+        results.importErrors.push({
           row: i + 1,
           error: 'locationId is required'
         });
@@ -300,7 +300,7 @@ async function importConversations(jobId, defaultLocationId, contacts) {
         
         if (!locationExists) {
           results.failed++;
-          results.errors.push({
+          results.importErrors.push({
             row: i + 1,
             error: `Invalid locationId: ${locationId} - Location does not exist`
           });
@@ -316,7 +316,7 @@ async function importConversations(jobId, defaultLocationId, contacts) {
       
       if (!contactId && !row.email && !row.phone) {
         results.failed++;
-        results.errors.push({
+        results.importErrors.push({
           row: i + 1,
           error: 'Must provide either contactId OR (email/phone)'
         });
@@ -326,7 +326,7 @@ async function importConversations(jobId, defaultLocationId, contacts) {
       // VALIDATION 3: Email format (if provided)
       if (row.email && !isValidEmail(row.email)) {
         results.failed++;
-        results.errors.push({
+        results.importErrors.push({
           row: i + 1,
           error: `Invalid email format: ${row.email}`
         });
@@ -336,7 +336,7 @@ async function importConversations(jobId, defaultLocationId, contacts) {
       // VALIDATION 4: Phone format (if provided)
       if (row.phone && !isValidPhone(row.phone)) {
         results.failed++;
-        results.errors.push({
+        results.importErrors.push({
           row: i + 1,
           error: `Invalid phone: ${row.phone} (use +countrycode...)`
         });
@@ -452,7 +452,7 @@ async function importConversations(jobId, defaultLocationId, contacts) {
       });
       
       results.failed++;
-      results.errors.push({
+      results.importErrors.push({
         row: i + 1,
         error: error.response?.data?.message || error.message || 'Unknown error',
         errorType: error.response?.status || 'unknown',
@@ -527,7 +527,7 @@ router.get('/status/:jobId', authenticateSession, async (req, res) => {
         processed: job.processed,
         successful: job.successful,
         failed: job.failed,
-        errors: job.errors,
+        errors: job.importErrors,
         startedAt: job.startedAt,
         completedAt: job.completedAt,
         createdAt: job.createdAt
