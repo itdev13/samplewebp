@@ -119,20 +119,30 @@ export default function MessagesTab() {
         }
       }
       
+      // Helper to safely format dates
+      const formatDate = (dateValue) => {
+        if (!dateValue) return '';
+        try {
+          const date = new Date(dateValue);
+          if (isNaN(date.getTime())) return '';
+          return date.toLocaleString('en-US', {
+            year: 'numeric',
+            month: 'short',
+            day: 'numeric',
+            hour: '2-digit',
+            minute: '2-digit',
+            second: '2-digit',
+            hour12: true
+          });
+        } catch (e) {
+          return '';
+        }
+      };
+      
       // Convert to CSV
       const csvHeaders = 'Message Date,Conversation ID,Contact ID,Message Type,Direction,Status,Message Body\n';
       const csvRows = allMessages.map(msg => {
-        const formattedDate = msg.dateAdded 
-          ? new Date(msg.dateAdded).toLocaleString('en-US', {
-              year: 'numeric',
-              month: 'short',
-              day: 'numeric',
-              hour: '2-digit',
-              minute: '2-digit',
-              second: '2-digit',
-              hour12: true
-            })
-          : '';
+        const formattedDate = formatDate(msg.dateAdded);
         const message = (msg.body || '').replace(/"/g, '""').replace(/\n/g, ' ');
         return `"${formattedDate}","${msg.conversationId || ''}","${msg.contactId || ''}","${msg.type || ''}","${msg.direction || ''}","${msg.status || ''}","${message}"`;
       }).join('\n');

@@ -124,7 +124,13 @@ router.get('/download', authenticateSession, async (req, res) => {
     if (lastMessageDirection) filters.lastMessageDirection = lastMessageDirection;
     if (status) filters.status = status;
     if (lastMessageAction) filters.lastMessageAction = lastMessageAction;
-    if (sortBy) filters.sortBy = sortBy;
+    if (sortBy) {
+      filters.sortBy = sortBy;
+      // GHL API requires sortScoreProfile when sortBy is 'score_profile'
+      if (sortBy === 'score_profile') {
+        filters.sortScoreProfile = 'desc'; // or 'asc'
+      }
+    }
 
     logger.info('📤 Filters being sent to GHL API', { filters });
 
@@ -156,11 +162,19 @@ router.get('/download', authenticateSession, async (req, res) => {
     });
 
   } catch (error) {
-    logError('Download conversations error', error, { locationId, filters });
-    res.status(500).json({
+    logError('Download conversations error', error, { 
+      locationId: req.query?.locationId,
+      filters: req.query 
+    });
+    
+    const statusCode = error.response?.status || 500;
+    const errorMessage = getUserFriendlyMessage(error);
+    
+    res.status(statusCode).json({
       success: false,
       error: 'Failed to download conversations',
-      message: getUserFriendlyMessage(error)
+      message: errorMessage,
+      details: error.response?.data?.message || error.message
     });
   }
 });
@@ -212,6 +226,11 @@ router.get('/search', authenticateSession, async (req, res) => {
       });
     }
 
+    // Add sortScoreProfile if sortBy is 'score_profile'
+    if (filters.sortBy === 'score_profile') {
+      filters.sortScoreProfile = 'desc';
+    }
+
     const result = await ghlService.searchConversations(locationId, filters);
 
     res.json({
@@ -220,10 +239,19 @@ router.get('/search', authenticateSession, async (req, res) => {
     });
 
   } catch (error) {
-    logError('Search conversations error', error, { locationId, filters });
-    res.status(500).json({
+    logError('Search conversations error', error, { 
+      locationId: req.query?.locationId,
+      filters: req.query 
+    });
+    
+    const statusCode = error.response?.status || 500;
+    const errorMessage = getUserFriendlyMessage(error);
+    
+    res.status(statusCode).json({
       success: false,
-      error: getUserFriendlyMessage(error)
+      error: errorMessage,
+      message: errorMessage,
+      details: error.response?.data?.message || error.message
     });
   }
 });
@@ -252,7 +280,10 @@ router.get('/:conversationId', authenticateSession, async (req, res) => {
     });
 
   } catch (error) {
-    logError('Get conversation error', error, { locationId, conversationId });
+    logError('Get conversation error', error, { 
+      locationId: req.query?.locationId,
+      conversationId: req.params?.conversationId 
+    });
     res.status(500).json({
       success: false,
       error: getUserFriendlyMessage(error)

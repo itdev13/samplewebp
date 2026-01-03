@@ -99,32 +99,36 @@ export default function ConversationsTab({ onSelectConversation }) {
         }
       }
       
+      // Helper to safely format dates
+      const formatDate = (dateValue) => {
+        if (!dateValue) return '';
+        
+        try {
+          const date = new Date(dateValue);
+          // Check if date is valid
+          if (isNaN(date.getTime())) {
+            return ''; // Invalid date
+          }
+          
+          return date.toLocaleString('en-US', {
+            year: 'numeric',
+            month: 'short',
+            day: 'numeric',
+            hour: '2-digit',
+            minute: '2-digit',
+            hour12: true
+          });
+        } catch (e) {
+          return ''; // Error formatting date
+        }
+      };
+      
       // Convert to CSV with formatted dates and all available fields
       const csvHeaders = 'Conversation ID,Created Date,Contact Name,Contact ID,Last Message Date,Last Message Type,Last Message Direction,Last Message,Unread Count,Status,Last Message Channel\n';
       const csvRows = allConversations.map(conv => {
         const lastMessage = (conv.lastMessageBody || '').replace(/"/g, '""').replace(/\n/g, ' ');
-        
-        const formattedLastMessageDate = conv.lastMessageDate 
-          ? new Date(conv.lastMessageDate).toLocaleString('en-US', {
-              year: 'numeric',
-              month: 'short',
-              day: 'numeric',
-              hour: '2-digit',
-              minute: '2-digit',
-              hour12: true
-            })
-          : '';
-        
-        const formattedCreatedDate = conv.dateAdded 
-          ? new Date(conv.dateAdded).toLocaleString('en-US', {
-              year: 'numeric',
-              month: 'short',
-              day: 'numeric',
-              hour: '2-digit',
-              minute: '2-digit',
-              hour12: true
-            })
-          : '';
+        const formattedLastMessageDate = formatDate(conv.lastMessageDate);
+        const formattedCreatedDate = formatDate(conv.dateAdded);
         
         return `"${conv.id}","${formattedCreatedDate}","${conv.contactName || ''}","${conv.contactId || ''}","${formattedLastMessageDate}","${conv.lastMessageType || ''}","${conv.lastMessageDirection || ''}","${lastMessage}","${conv.unreadCount || 0}","${conv.status || ''}","${conv.type || ''}"`;
       }).join('\n');

@@ -84,7 +84,10 @@ router.get('/:conversationId', authenticateSession, async (req, res) => {
     });
 
   } catch (error) {
-    logError('Get messages error', error, { locationId, conversationId });
+    logError('Get messages error', error, { 
+      locationId: req.query?.locationId,
+      conversationId: req.params?.conversationId 
+    });
     res.status(500).json({
       success: false,
       error: 'Failed to get messages',
@@ -218,7 +221,10 @@ router.get('/:conversationId/download', authenticateSession, async (req, res) =>
     res.send(csvContent);
 
   } catch (error) {
-    logError('Download CSV error', error, { locationId, conversationId });
+    logError('Download CSV error', error, { 
+      locationId: req.query?.locationId,
+      conversationId: req.params?.conversationId 
+    });
     res.status(500).send('Error downloading messages');
   }
 });

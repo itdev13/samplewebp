@@ -104,7 +104,10 @@ router.get('/messages', authenticateSession, async (req, res) => {
     });
 
   } catch (error) {
-    logError('Export messages error', error, { locationId, filters: { channel, startDate, endDate, conversationId } });
+    logError('Export messages error', error, { 
+      locationId: req.query?.locationId,
+      filters: req.query 
+    });
     res.status(500).json({
       success: false,
       error: 'Failed to export messages',
@@ -173,7 +176,9 @@ router.get('/messages/all', authenticateSession, async (req, res) => {
     });
 
   } catch (error) {
-    logError('Bulk export error', error, { locationId });
+    logError('Bulk export error', error, { 
+      locationId: req.query?.locationId 
+    });
     res.status(500).json({
       success: false,
       error: 'Failed to bulk export',
@@ -222,7 +227,10 @@ router.get('/csv', authenticateSession, async (req, res) => {
     res.send(csv);
 
   } catch (error) {
-    logError('CSV export error', error, { locationId, filters });
+    logError('CSV export error', error, { 
+      locationId: req.query?.locationId,
+      filters: req.query 
+    });
     res.status(500).json({
       success: false,
       error: getUserFriendlyMessage(error)

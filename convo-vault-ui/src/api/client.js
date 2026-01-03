@@ -7,7 +7,7 @@ const apiClient = axios.create({
   headers: {
     'Content-Type': 'application/json',
   },
-  timeout: 10000, // 10 second timeout
+  timeout: 30000, // 30 second timeout (allow for large exports)
   withCredentials: true
 });
 
@@ -35,8 +35,33 @@ apiClient.interceptors.response.use(
       localStorage.removeItem('sessionToken');
     }
     
-    const message = error.response?.data?.error || error.message || 'An error occurred';
-    return Promise.reject(new Error(message));
+    // Extract comprehensive error message from backend
+    const backendMessage = error.response?.data?.message || 
+                          error.response?.data?.error || 
+                          error.response?.data?.details;
+    
+    let message;
+    
+    if (error.code === 'ECONNABORTED' || error.message?.includes('timeout')) {
+      message = 'Request timeout. The server is taking too long to respond. Please try again.';
+    } else if (error.code === 'ERR_NETWORK') {
+      message = 'Network error. Please check your internet connection.';
+    } else if (backendMessage) {
+      message = backendMessage;
+    } else if (error.response?.status === 429) {
+      message = 'Too many requests. Please wait a moment before trying again.';
+    } else if (error.response?.status >= 500) {
+      message = 'Server error. Please try again in a moment.';
+    } else {
+      message = error.message || 'An unexpected error occurred';
+    }
+    
+    // Add status code to error for debugging
+    const enhancedError = new Error(message);
+    enhancedError.status = error.response?.status;
+    enhancedError.code = error.code;
+    
+    return Promise.reject(enhancedError);
   }
 );
 

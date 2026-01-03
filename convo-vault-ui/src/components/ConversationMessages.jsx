@@ -86,21 +86,31 @@ export default function ConversationMessages({ conversation, onBack }) {
         fetchMessages('Email') // channel=Email = email messages only
       ]);
       
+      // Helper to safely format dates
+      const formatDate = (dateValue) => {
+        if (!dateValue) return '';
+        try {
+          const date = new Date(dateValue);
+          if (isNaN(date.getTime())) return '';
+          return date.toLocaleString('en-US', {
+            year: 'numeric',
+            month: 'short',
+            day: 'numeric',
+            hour: '2-digit',
+            minute: '2-digit',
+            second: '2-digit',
+            hour12: true
+          });
+        } catch (e) {
+          return '';
+        }
+      };
+      
       // Create regular messages CSV
       if (regularMessages.length > 0) {
         const csvHeaders = 'Message Date,Message ID,Conversation ID,Message Type,Direction,Status,Message Body,Contact ID\n';
         const csvRows = regularMessages.map(msg => {
-          const formattedDate = msg.dateAdded 
-            ? new Date(msg.dateAdded).toLocaleString('en-US', {
-                year: 'numeric',
-                month: 'short',
-                day: 'numeric',
-                hour: '2-digit',
-                minute: '2-digit',
-                second: '2-digit',
-                hour12: true
-              })
-            : '';
+          const formattedDate = formatDate(msg.dateAdded);
           const message = (msg.body || '').replace(/"/g, '""').replace(/\n/g, ' ');
           return `"${formattedDate}","${msg.id}","${msg.conversationId || ''}","${msg.type || ''}","${msg.direction || ''}","${msg.status || ''}","${message}","${msg.contactId || ''}"`;
         }).join('\n');
@@ -123,17 +133,7 @@ export default function ConversationMessages({ conversation, onBack }) {
         
         const csvHeaders = 'Message Date,Message ID,Conversation ID,Subject,From,To,CC,BCC,Direction,Status,Message Body,Contact ID\n';
         const csvRows = emailMessages.map(msg => {
-          const formattedDate = msg.dateAdded 
-            ? new Date(msg.dateAdded).toLocaleString('en-US', {
-                year: 'numeric',
-                month: 'short',
-                day: 'numeric',
-                hour: '2-digit',
-                minute: '2-digit',
-                second: '2-digit',
-                hour12: true
-              })
-            : '';
+          const formattedDate = formatDate(msg.dateAdded);
           const message = (msg.body || '').replace(/"/g, '""').replace(/\n/g, ' ');
           const subject = (msg.subject || msg.meta?.email?.subject || '').replace(/"/g, '""');
           const from = msg.from || msg.meta?.email?.from || msg.meta?.from || '';

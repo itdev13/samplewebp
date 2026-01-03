@@ -4,6 +4,7 @@ const jwt = require('jsonwebtoken');
 const CryptoJS = require('crypto-js');
 const OAuthToken = require('../models/OAuthToken');
 const logger = require('../utils/logger');
+const { logError } = require('../utils/errorLogger');
 
 /**
  * Decrypt user data from GHL (Official Method)
@@ -54,7 +55,7 @@ router.post('/decrypt-user-data', async (req, res) => {
     });
 
   } catch (error) {
-    logger.error('Failed to decrypt user data:', error.message);
+    logError('Failed to decrypt user data', error);
     res.status(400).json({
       success: false,
       error: 'Failed to decrypt user data',
@@ -133,7 +134,11 @@ router.post('/verify', async (req, res) => {
     });
 
   } catch (error) {
-    logError('Authentication error', error, { locationId, companyId, userId });
+    logError('Authentication error', error, { 
+      locationId: req.body?.locationId,
+      companyId: req.body?.companyId,
+      userId: req.body?.userId 
+    });
     res.status(500).json({
       success: false,
       error: 'Authentication failed'
@@ -201,7 +206,9 @@ router.post('/refresh', async (req, res) => {
     });
 
   } catch (error) {
-    logError('Token refresh error', error, { oldToken });
+    logError('Token refresh error', error, { 
+      hasAuthHeader: !!req.headers?.authorization 
+    });
     res.status(401).json({
       success: false,
       error: 'Token refresh failed'
@@ -257,7 +264,9 @@ router.get('/session', async (req, res) => {
     });
 
   } catch (error) {
-    logError('Session info error', error, { token });
+    logError('Session info error', error, { 
+      hasAuthHeader: !!req.headers?.authorization 
+    });
     res.status(401).json({
       success: false,
       error: 'Invalid session'
@@ -300,7 +309,9 @@ router.get('/locations', async (req, res) => {
     });
 
   } catch (error) {
-    logError('Get locations error', error, { authHeader });
+    logError('Get locations error', error, { 
+      hasAuthHeader: !!req.headers?.authorization 
+    });
     res.status(500).json({
       success: false,
       error: 'Failed to get sub-accounts'

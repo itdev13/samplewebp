@@ -4,6 +4,7 @@ const multer = require('multer');
 const nodemailer = require('nodemailer');
 const fs = require('fs');
 const logger = require('../utils/logger');
+const { logError } = require('../utils/errorLogger');
 const { authenticateSession } = require('../middleware/auth');
 const { escapeHtml, isValidEmail } = require('../utils/sanitize');
 
@@ -121,7 +122,10 @@ router.post('/ticket', authenticateSession, upload.array('images', 5), async (re
     });
 
   } catch (error) {
-    logger.error('Support ticket error:', error);
+    logError('Support ticket error', error, { 
+      email: req.body?.email,
+      subject: req.body?.subject 
+    });
 
     // Clean up files on error
     if (req.files) {
@@ -135,7 +139,7 @@ router.post('/ticket', authenticateSession, upload.array('images', 5), async (re
     res.status(500).json({
       success: false,
       error: 'Failed to submit support ticket',
-      message: error.message
+      message: error.message || 'Failed to send email'
     });
   }
 });

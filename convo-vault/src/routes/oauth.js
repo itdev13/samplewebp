@@ -3,6 +3,7 @@ const router = express.Router();
 const ghlService = require('../services/ghlService');
 const OAuthToken = require('../models/OAuthToken');
 const logger = require('../utils/logger');
+const { logError } = require('../utils/errorLogger');
 
 /**
  * OAuth Routes - Simple Implementation
@@ -257,7 +258,7 @@ router.get('/callback', async (req, res) => {
     `);
 
   } catch (error) {
-    logger.error('OAuth callback error:', error);
+    logError('OAuth callback error', error, { code: req.query?.code });
     
     // Check if it's a reused authorization code (already completed)
     const isCodeReused = error.response?.data?.error === 'invalid_grant' && 

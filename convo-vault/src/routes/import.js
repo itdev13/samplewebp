@@ -35,8 +35,13 @@ const upload = multer({
 /**
  * @route POST /api/import/upload
  * @desc Upload CSV/Excel file and import to conversations
+ * Note: This endpoint returns immediately with job ID
+ * Processing happens asynchronously in background
  */
 router.post('/upload', authenticateSession, upload.single('file'), async (req, res) => {
+  // Increase timeout for this endpoint to handle large file parsing
+  req.setTimeout(60000); // 60 seconds for upload + parsing
+  
   try {
     const { locationId } = req.body;
 
@@ -95,7 +100,7 @@ router.post('/upload', authenticateSession, upload.single('file'), async (req, r
 
   } catch (error) {
     logError('Import upload error', error, { 
-      locationId, 
+      locationId: req.body?.locationId,
       filename: req.file?.originalname,
       size: req.file?.size 
     });
@@ -274,6 +279,7 @@ async function importConversations(jobId, defaultLocationId, contacts) {
   for (let i = 0; i < contacts.length; i++) {
     const row = contacts[i];
     
+    // Wrap entire row processing to prevent any error from stopping import
     try {
       // VALIDATION 1: locationId (from row or default)
       const locationId = (row.locationId?.trim()) || defaultLocationId;
@@ -434,10 +440,12 @@ async function importConversations(jobId, defaultLocationId, contacts) {
         logger.info(`📈 Progress: ${i + 1}/${contacts.length} rows processed (${results.success} created, ${results.skipped} skipped, ${results.failed} failed)`);
       }
 
-      // Rate limiting - slower to avoid API throttling
-      await new Promise(resolve => setTimeout(resolve, 300));
+      // Rate limiting - balanced to avoid API throttling while keeping speed reasonable
+      // 150ms delay = ~6-7 rows per second = 88 rows in ~13-15 seconds
+      await new Promise(resolve => setTimeout(resolve, 150));
 
     } catch (error) {
+      // Catch ANY error to ensure import continues
       logger.error(`Row ${i + 1}: ❌ ${error.message}`, {
         error: error.response?.data || error.message,
         status: error.response?.status
@@ -457,12 +465,17 @@ async function importConversations(jobId, defaultLocationId, contacts) {
         }
       });
       
-      // Update job with error count
-      await ImportJob.findByIdAndUpdate(jobId, {
-        processed: i + 1,
-        successful: results.success,
-        failed: results.failed
-      });
+      // Update job with error count (always update progress)
+      try {
+        await ImportJob.findByIdAndUpdate(jobId, {
+          processed: i + 1,
+          successful: results.success,
+          failed: results.failed
+        });
+      } catch (dbError) {
+        logger.error('Failed to update job progress', dbError);
+        // Continue even if DB update fails
+      }
     }
   }
 

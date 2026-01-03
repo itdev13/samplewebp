@@ -1,5 +1,6 @@
 const axios = require('axios');
 const logger = require('../utils/logger');
+const { logError, logWarning } = require('../utils/errorLogger');
 const OAuthToken = require('../models/OAuthToken');
 
 /**
