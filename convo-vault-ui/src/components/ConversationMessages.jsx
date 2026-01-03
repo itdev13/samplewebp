@@ -5,6 +5,8 @@ import { messagesAPI } from '../api/messages';
 import { exportAPI } from '../api/export';
 import { Button, Select, Tooltip } from 'antd';
 import { useErrorModal } from './ErrorModal';
+import { useInfoModal } from './InfoModal';
+import { getMessageTypeDisplay, getMessageTypeIcon } from '../utils/messageTypes';
 
 export default function ConversationMessages({ conversation, onBack }) {
   const { location } = useAuth();
@@ -12,6 +14,7 @@ export default function ConversationMessages({ conversation, onBack }) {
   const [lastMessageId, setLastMessageId] = useState(null);
   const [downloading, setDownloading] = useState(false);
   const { showError, ErrorModalComponent } = useErrorModal();
+  const { showInfo, InfoModalComponent } = useInfoModal();
 
   const { data, isLoading, error } = useQuery({
     queryKey: ['conversation-messages', conversation?.id, location?.id, pageSize, lastMessageId],
@@ -155,30 +158,48 @@ export default function ConversationMessages({ conversation, onBack }) {
       
       // Show detailed success message
       if (regularMessages.length === 0 && emailMessages.length === 0) {
-        alert('ℹ️ No messages found in this conversation.');
+        showInfo('No Messages', 'No messages found in this conversation.');
         return;
       }
       
-      let successMessage = '✅ Export Complete!\n\n';
+      // Build details array for modal
+      const exportDetails = [];
       
       if (regularMessages.length > 0 && emailMessages.length > 0) {
-        successMessage += `📥 Downloaded 2 CSV files:\n\n`;
-        successMessage += `1️⃣ ${baseName}_messages_${timestamp}.csv\n`;
-        successMessage += `   • ${regularMessages.length} messages (SMS, WhatsApp, Calls, etc.)\n\n`;
-        successMessage += `2️⃣ ${baseName}_emails_${timestamp}.csv\n`;
-        successMessage += `   • ${emailMessages.length} email messages with full metadata\n`;
-        successMessage += `   • Includes: Subject, From, To, CC, BCC`;
+        exportDetails.push({
+          icon: '1️⃣',
+          title: `${baseName}_messages_${timestamp}.csv`,
+          items: [
+            `${regularMessages.length} messages (SMS, WhatsApp, Calls, etc.)`
+          ]
+        });
+        exportDetails.push({
+          icon: '2️⃣',
+          title: `${baseName}_emails_${timestamp}.csv`,
+          items: [
+            `${emailMessages.length} email messages with full metadata`,
+            'Includes: Subject, From, To, CC, BCC'
+          ]
+        });
       } else if (regularMessages.length > 0) {
-        successMessage += `📥 Downloaded 1 CSV file:\n\n`;
-        successMessage += `${baseName}_messages_${timestamp}.csv\n`;
-        successMessage += `• ${regularMessages.length} messages`;
+        exportDetails.push({
+          icon: '📄',
+          title: `${baseName}_messages_${timestamp}.csv`,
+          items: [`${regularMessages.length} messages exported`]
+        });
       } else {
-        successMessage += `📥 Downloaded 1 CSV file:\n\n`;
-        successMessage += `${baseName}_emails_${timestamp}.csv\n`;
-        successMessage += `• ${emailMessages.length} email messages with metadata`;
+        exportDetails.push({
+          icon: '📧',
+          title: `${baseName}_emails_${timestamp}.csv`,
+          items: [`${emailMessages.length} email messages with metadata`]
+        });
       }
       
-      alert(successMessage);
+      showInfo(
+        'Export Complete!',
+        `Downloaded ${exportDetails.length} CSV file${exportDetails.length > 1 ? 's' : ''}:`,
+        exportDetails
+      );
       
     } catch (err) {
       showError('Export Failed', 'Failed to export messages from this conversation. Please try again.');
@@ -189,6 +210,8 @@ export default function ConversationMessages({ conversation, onBack }) {
 
   return (
     <div className="space-y-6">
+      <ErrorModalComponent />
+      <InfoModalComponent />
       {/* Conversation Header */}
       <div className="bg-gradient-to-r from-blue-600 to-indigo-600 rounded-xl p-6 shadow-lg text-white">
         <div className="flex items-center justify-between">
