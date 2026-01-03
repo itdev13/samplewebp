@@ -21,7 +21,21 @@ class ConversationsManagerApp {
   }
 
   setupMiddleware() {
-    this.app.use(helmet());
+    // Configure Helmet to allow GHL iframe embedding
+    this.app.use(helmet({
+      contentSecurityPolicy: {
+        directives: {
+          ...helmet.contentSecurityPolicy.getDefaultDirectives(),
+          "frame-ancestors": [
+            "'self'",
+            "https://*.gohighlevel.com",
+            "https://*.leadconnectorhq.com",
+            "https://app.gohighlevel.com",
+            "https://app.leadconnectorhq.com"
+          ]
+        }
+      }
+    }));
     
     // CORS - Allow cloudflare tunnels and localhost
     this.app.use(cors({
