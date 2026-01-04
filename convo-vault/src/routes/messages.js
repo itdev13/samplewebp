@@ -52,6 +52,8 @@ router.get('/:conversationId', authenticateSession, async (req, res) => {
 
     logger.info(`Found ${messages.length} messages, nextCursor: ${nextCursor}`);
 
+    console.log('messages', messages);
+
     res.json({
       success: true,
       message: 'Messages retrieved successfully',
