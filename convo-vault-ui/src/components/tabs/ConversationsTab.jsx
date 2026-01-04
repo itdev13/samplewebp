@@ -92,7 +92,7 @@ export default function ConversationsTab({ onSelectConversation }) {
         
         // Get cursor for next page (last conversation ID)
         if (batch.length > 0) {
-          startAfterId = batch[batch.length - 1].id;
+          startAfterId = batch[batch.length - 1].sort?.[0];
         }
         
         // Check if there are more (batch size equals limit means more might exist)

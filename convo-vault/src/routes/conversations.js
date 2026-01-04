@@ -94,7 +94,6 @@ router.get('/download', authenticateSession, async (req, res) => {
     // Fetch conversations from API
     const result = await ghlService.searchConversations(locationId, filters);
 
-    console.log('result', result.conversations);
     const conversations = result.conversations || [];
     res.json({
       success: true,
@@ -118,7 +117,8 @@ router.get('/download', authenticateSession, async (req, res) => {
           dateUpdated: conv.dateUpdated,
           userId: conv.userId,
           email: conv.email,
-          phone: conv.phone
+          phone: conv.phone,
+          sort: conv.sort
         }))
       },
       meta: {
