@@ -125,13 +125,13 @@ export default function ConversationsTab({ onSelectConversation }) {
       };
       
       // Convert to CSV with formatted dates and all available fields
-      const csvHeaders = 'Conversation ID,Created Date,Contact Name,email,phone,Contact ID,Last Message Date,Last Message Type,Last Message Direction,Last Message,Unread Count,Last Message Channel\n';
+      const csvHeaders = 'Conversation ID,Created Date,Contact Name,email,phone,Contact ID,Last Message Date,Last Message Action,Last Message Direction,Last Message,Unread Count,Last Message Channel\n';
       console.log('allConversations', allConversations);
       const csvRows = allConversations.map(conv => {
         const lastMessage = (conv.lastMessageBody || '').replace(/"/g, '""').replace(/\n/g, ' ');
         const formattedLastMessageDate = formatDate(conv.lastMessageDate);
         const formattedCreatedDate = formatDate(conv.dateAdded);
-        return `"${conv.id}","${formattedCreatedDate}","${conv.contactName || ''}","${conv.email || ''}","${conv.phone || ''}","${conv.contactId || ''}","${formattedLastMessageDate}","${conv.lastMessageAction || ''}","${conv.lastMessageDirection || ''}","${lastMessage}","${conv.unreadCount || 0}","${getMessageTypeDisplay(conv.lastMessageType) || ''}"`;
+        return `"${conv.id}","${formattedCreatedDate}","${conv.contactName || ''}","${conv.email || ''}","${conv.phone || ''}","${conv.contactId || ''}","${formattedLastMessageDate}","${conv.lastOutboundMessageAction || ''}","${conv.lastMessageDirection || ''}","${lastMessage}","${conv.unreadCount || 0}","${getMessageTypeDisplay(conv.lastMessageType) || ''}"`;
       }).join('\n');
       
       const csv = csvHeaders + csvRows;

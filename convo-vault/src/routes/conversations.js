@@ -107,7 +107,7 @@ router.get('/download', authenticateSession, async (req, res) => {
           lastMessageBody: conv.lastMessageBody,
           lastMessageType: conv.lastMessageType,
           lastMessageDirection: conv.lastMessageDirection,
-          lastMessageAction: conv.lastMessageAction,
+          lastOutboundMessageAction: conv.lastOutboundMessageAction,
           unreadCount: conv.unreadCount,
           type: conv.type,
           status: conv.status,
