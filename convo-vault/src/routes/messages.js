@@ -69,7 +69,8 @@ router.get('/:conversationId', authenticateSession, async (req, res) => {
           dateAdded: msg.dateAdded,
           attachments: msg.attachments || [],
           contactId: msg.contactId,
-          conversationId: msg.conversationId
+          conversationId: msg.conversationId,
+          meta: msg.meta
         })),
         pagination: {
           hasMore: hasMore,
