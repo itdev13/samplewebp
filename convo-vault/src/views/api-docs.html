@@ -733,26 +733,65 @@
       }
     });
 
-    // Copy token to clipboard
-    function copyToken() {
+    // Copy token to clipboard with fallback
+    async function copyToken() {
       if (!currentToken) return;
       
-      navigator.clipboard.writeText(currentToken).then(() => {
-        const btn = event.target;
-        const originalText = btn.textContent;
-        btn.textContent = '✅ Copied!';
+      const btn = event.target;
+      const originalText = btn.textContent;
+      
+      try {
+        // Try modern clipboard API
+        if (navigator.clipboard && window.isSecureContext) {
+          await navigator.clipboard.writeText(currentToken);
+        } else {
+          // Fallback method
+          const textArea = document.createElement('textarea');
+          textArea.value = currentToken;
+          textArea.style.position = 'fixed';
+          textArea.style.left = '-999999px';
+          document.body.appendChild(textArea);
+          textArea.focus();
+          textArea.select();
+          document.execCommand('copy');
+          document.body.removeChild(textArea);
+        }
         
+        btn.textContent = '✅ Copied!';
         setTimeout(() => {
           btn.textContent = originalText;
         }, 2000);
-      });
+      } catch (err) {
+        console.error('Copy failed:', err);
+        btn.textContent = '❌ Copy failed';
+        setTimeout(() => {
+          btn.textContent = originalText;
+        }, 2000);
+      }
     }
 
-    function copyCode(button) {
+    // Copy code blocks with fallback
+    async function copyCode(button) {
       const codeBlock = button.nextElementSibling;
       const code = codeBlock.textContent;
       
-      navigator.clipboard.writeText(code).then(() => {
+      try {
+        // Try modern clipboard API
+        if (navigator.clipboard && window.isSecureContext) {
+          await navigator.clipboard.writeText(code);
+        } else {
+          // Fallback method
+          const textArea = document.createElement('textarea');
+          textArea.value = code;
+          textArea.style.position = 'fixed';
+          textArea.style.left = '-999999px';
+          document.body.appendChild(textArea);
+          textArea.focus();
+          textArea.select();
+          document.execCommand('copy');
+          document.body.removeChild(textArea);
+        }
+        
         button.textContent = 'Copied!';
         button.classList.add('copied');
         
@@ -760,7 +799,13 @@
           button.textContent = 'Copy';
           button.classList.remove('copied');
         }, 2000);
-      });
+      } catch (err) {
+        console.error('Copy failed:', err);
+        button.textContent = 'Copy failed';
+        setTimeout(() => {
+          button.textContent = 'Copy';
+        }, 2000);
+      }
     }
 
     // Smooth scroll for nav links
