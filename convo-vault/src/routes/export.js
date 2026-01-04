@@ -86,10 +86,11 @@ router.get('/messages', authenticateSession, async (req, res) => {
           contactId: msg.contactId,
           type: msg.type,
           body: msg.body,
-          direction: msg.direction,
+          direction: msg.direction || msg?.meta?.email?.direction || "outbound",
           status: msg.status,
           dateAdded: msg.dateAdded,
-          attachments: msg.attachments || []
+          attachments: msg.attachments || [],
+          meta: msg.meta
         })),
         pagination: {
           nextCursor: result.nextCursor,

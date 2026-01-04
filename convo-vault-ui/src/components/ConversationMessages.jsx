@@ -381,22 +381,30 @@ export default function ConversationMessages({ conversation, onBack }) {
                     <span>{formatDate(message.dateAdded)}</span>
                   </div>
                   
-                  {/* Email Thread Notice */}
-                  {(message.type === 'TYPE_EMAIL' || message.type === 'Email' || message.type === 3) && 
-                  message.meta?.email?.message_ids && 
-                  message.meta.email?.messageIds?.length > 1 && (
-                    <div className={`text-xs mb-2 px-2 py-1 rounded flex items-center gap-1.5 ${
-                      isOutbound ? 'bg-blue-500/20 text-blue-100' : 'bg-blue-50 text-blue-700'
-                    }`}>
-                      <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                      </svg>
-                      <span className="font-medium">
-                        Email Thread ({message.meta.email.messageIds.length} messages) - Download to view full thread
-                      </span>
-                    </div>
-                  )}
-                  
+                    {/* Email Thread Notice */}
+                    {(message.type === 'TYPE_EMAIL' || message.type === 'Email' || message.type === 3) && 
+                    message.meta?.email?.messageIds && 
+                    message.meta.email.messageIds.length > 1 && (
+                      <div className={`text-xs mb-2 px-2 py-1 rounded flex items-center gap-1.5 ${
+                        isOutbound ? 'bg-blue-500/20 text-blue-100' : 'bg-blue-50 text-blue-700'
+                      }`}>
+                        <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+                        </svg>
+                        <span className="font-medium">
+                          Email Thread ({message.meta.email.messageIds.length} messages)
+                        </span>
+                        <Tooltip
+                          title="Click 'Export CSV' button above to download the complete email thread with all messages and metadata."
+                          placement="top"
+                        >
+                          <svg className={`w-3.5 h-3.5 cursor-help ${isOutbound ? 'text-blue-100' : 'text-blue-600'}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                          </svg>
+                        </Tooltip>
+                      </div>
+                    )}
+                    
                   <div className="text-sm">{message.body}</div>
                   
                   {/* Attachments */}
@@ -408,6 +416,14 @@ export default function ConversationMessages({ conversation, onBack }) {
                       <span className={isOutbound ? 'text-blue-100' : 'text-gray-600'}>
                         {message.attachments.length} attachment{message.attachments.length > 1 ? 's' : ''}
                       </span>
+                      <Tooltip
+                        title="Attachment URLs are included in the CSV export. Click 'Export CSV' above to download all attachment links."
+                        placement="top"
+                      >
+                        <svg className={`w-3.5 h-3.5 cursor-help ${isOutbound ? 'text-blue-100' : 'text-gray-500'}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                        </svg>
+                      </Tooltip>
                     </div>
                   )}
                 </div>

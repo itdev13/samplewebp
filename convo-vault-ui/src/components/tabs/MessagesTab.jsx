@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { useAuth } from '../../context/AuthContext';
 import { exportAPI } from '../../api/export';
-import { Button, Select, DatePicker, Input, Tooltip } from 'antd';
+import { Button, Select, DatePicker, Input, Tooltip, message as antMessage } from 'antd';
 import { useErrorModal } from '../ErrorModal';
 import { getMessageTypeDisplay, getMessageTypeIcon } from '../../utils/messageTypes';
 import dayjs from 'dayjs';
@@ -452,20 +452,27 @@ export default function MessagesTab() {
                           {new Date(message.dateAdded).toLocaleString()}
                         </span>
                       </div>
-                      {console.log('message', message)}
-                      {/* Email Thread Notice */}
-                      {(message.type === 'TYPE_EMAIL' || message.type === 'Email' || message.type === 3) && 
-                       message.meta?.email?.messageIds && 
-                       message.meta.email.messageIds.length > 1 && (
-                        <div className="mb-2 px-3 py-1.5 bg-blue-50 border border-blue-200 rounded-lg flex items-center gap-2 text-xs text-blue-700">
-                          <svg className="w-4 h-4 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
-                          </svg>
-                          <span className="font-medium">
-                            📧 Email Thread ({message.meta.email.messageIds.length} messages) - Download from Conversation view to get full thread
-                          </span>
-                        </div>
-                      )}
+                        {/* Email Thread Notice */}
+                        {(message.type === 'TYPE_EMAIL' || message.type === 'Email' || message.type === 3) && 
+                        message.meta?.email?.messageIds && 
+                        message.meta.email.messageIds.length > 1 && (
+                          <div className="mb-2 px-3 py-1.5 bg-blue-50 border border-blue-200 rounded-lg flex items-center gap-2 text-xs text-blue-700">
+                            <svg className="w-4 h-4 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+                            </svg>
+                            <span className="font-medium">
+                              📧 Email Thread ({message.meta.email.messageIds.length} messages)
+                            </span>
+                            <Tooltip
+                              title="Click on this conversation in the Conversations tab to view all messages in the thread. Download from there to get the complete email thread with all replies."
+                              placement="top"
+                            >
+                              <svg className="w-4 h-4 cursor-help" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                              </svg>
+                            </Tooltip>
+                          </div>
+                        )}
 
                       <p className="text-sm text-gray-700 mb-2">{message.body}</p>
                       
@@ -478,12 +485,48 @@ export default function MessagesTab() {
                           <span className="font-medium">
                             {message.attachments.length} attachment{message.attachments.length > 1 ? 's' : ''}
                           </span>
+                          <Tooltip
+                            title="Attachment URLs are included in the CSV export. Click 'Export CSV' to download all attachment links."
+                            placement="top"
+                          >
+                            <svg className="w-4 h-4 cursor-help text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                            </svg>
+                          </Tooltip>
                         </div>
                       )}
 
                       <div className="flex items-center gap-4 text-xs text-gray-500">
-                        <span>Conv: {message.conversationId?.slice(0, 12)}...</span>
-                        <span>Contact: {message.contactId?.slice(0, 12)}...</span>
+                        <Tooltip title="Click to copy Conversation ID">
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              navigator.clipboard.writeText(message.conversationId);
+                              antMessage.success('Conversation ID copied!');
+                            }}
+                            className="flex items-center gap-1 hover:text-blue-600 transition-colors group/conv"
+                          >
+                            <span className="font-mono">Conv: {message.conversationId}</span>
+                            <svg className="w-3 h-3 opacity-0 group-hover/conv:opacity-100 transition-opacity" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
+                            </svg>
+                          </button>
+                        </Tooltip>
+                        <Tooltip title="Click to copy Contact ID">
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              navigator.clipboard.writeText(message.contactId);
+                              antMessage.success('Contact ID copied!');
+                            }}
+                            className="flex items-center gap-1 hover:text-blue-600 transition-colors group/contact"
+                          >
+                            <span className="font-mono">Contact: {message.contactId}</span>
+                            <svg className="w-3 h-3 opacity-0 group-hover/contact:opacity-100 transition-opacity" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
+                            </svg>
+                          </button>
+                        </Tooltip>
                       </div>
                     </div>
                   </div>
