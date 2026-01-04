@@ -452,7 +452,7 @@ export default function MessagesTab() {
                           {new Date(message.dateAdded).toLocaleString()}
                         </span>
                       </div>
-
+                      {console.log('message', message)}
                       {/* Email Thread Notice */}
                       {(message.type === 'TYPE_EMAIL' || message.type === 'Email' || message.type === 3) && 
                        message.meta?.email?.messageIds && 
