@@ -94,7 +94,6 @@ router.get('/download', authenticateSession, async (req, res) => {
     const result = await ghlService.searchConversations(locationId, filters);
 
     const conversations = result.conversations || [];
-    console.log('conversations', conversations);
     res.json({
       success: true,
       message: 'Conversations downloaded successfully',
