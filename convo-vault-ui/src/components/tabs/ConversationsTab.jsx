@@ -5,6 +5,7 @@ import { conversationsAPI } from '../../api/conversations';
 import { DatePicker, Select, Button, Tooltip, message, Input } from 'antd';
 import { useErrorModal } from '../ErrorModal';
 import dayjs from 'dayjs';
+import { getMessageTypeDisplay } from '../../utils/messageTypes';
 
 export default function ConversationsTab({ onSelectConversation }) {
   const { location } = useAuth();
@@ -124,14 +125,13 @@ export default function ConversationsTab({ onSelectConversation }) {
       };
       
       // Convert to CSV with formatted dates and all available fields
-      const csvHeaders = 'Conversation ID,Created Date,Contact Name,Contact ID,Last Message Date,Last Message Type,Last Message Direction,Last Message,Unread Count,Status,Last Message Channel\n';
+      const csvHeaders = 'Conversation ID,Created Date,Contact Name,Contact ID,Last Message Date,Last Message Type,Last Message Direction,Last Message,Unread Count,Last Message Channel\n';
       console.log('allConversations', allConversations);
       const csvRows = allConversations.map(conv => {
         const lastMessage = (conv.lastMessageBody || '').replace(/"/g, '""').replace(/\n/g, ' ');
         const formattedLastMessageDate = formatDate(conv.lastMessageDate);
         const formattedCreatedDate = formatDate(conv.dateAdded);
-        
-        return `"${conv.id}","${formattedCreatedDate}","${conv.contactName || ''}","${conv.contactId || ''}","${formattedLastMessageDate}","${conv.lastMessageType || ''}","${conv.lastMessageDirection || ''}","${lastMessage}","${conv.unreadCount || 0}","${conv.status || ''}","${conv.type || ''}"`;
+        return `"${conv.id}","${formattedCreatedDate}","${conv.contactName || ''}","${conv.contactId || ''}","${formattedLastMessageDate}","${conv.lastMessageType || ''}","${conv.lastMessageDirection || ''}","${lastMessage}","${conv.unreadCount || 0}","${getMessageTypeDisplay(conv.lastMessageType) || ''}"`;
       }).join('\n');
       
       const csv = csvHeaders + csvRows;

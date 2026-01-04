@@ -53,54 +53,6 @@ router.get('/download', authenticateSession, async (req, res) => {
       });
     }
 
-    // If specific conversationId provided, fetch that conversation directly
-    if (conversationId) {
-      logger.info('Fetching specific conversation by ID', { locationId, conversationId });
-      
-      const result = await ghlService.getConversation(locationId, conversationId);
-      
-      // Log raw response for debugging different structures
-      logger.info('📦 Single conversation API response', {
-        topLevelKeys: Object.keys(result || {}),
-        hasConversationKey: !!result.conversation,
-        rawSample: JSON.stringify(result).substring(0, 300)
-      });
-      
-      // Normalize single conversation to match search response format
-      // GHL returns different structures: sometimes { conversation: {...} }, sometimes direct object
-      const conversation = result.conversation || result;
-      
-      const normalized = {
-        id: conversation.id,
-        contactId: conversation.contactId,
-        contactName: conversation.contactName || conversation.contact?.name || '',
-        locationId: conversation.locationId,
-        lastMessageBody: conversation.lastMessageBody || '',
-        lastMessageType: conversation.lastMessageType || conversation.type || '',
-        lastMessageDirection: conversation.lastMessageDirection || '',
-        lastMessageDate: conversation.lastMessageDate || conversation.dateUpdated || '',
-        dateAdded: conversation.dateAdded || conversation.dateCreated || '',
-        unreadCount: conversation.unreadCount || 0,
-        status: conversation.status || '',
-        type: conversation.type || conversation.lastMessageType || ''
-      };
-      
-      logger.info('✅ Normalized conversation for export', {
-        hasType: !!normalized.type,
-        hasDirection: !!normalized.lastMessageDirection,
-        normalized
-      });
-      
-      return res.json({
-        success: true,
-        message: 'Conversation retrieved successfully',
-        data: {
-          conversations: [normalized],
-          total: 1
-        }
-      });
-    }
-
     // Sanitize numeric parameters
     const sanitizedLimit = sanitizeLimit(limit, 20, 100);
     const sanitizedOffset = sanitizeOffset(offset, 0);
@@ -132,13 +84,17 @@ router.get('/download', authenticateSession, async (req, res) => {
       }
     }
 
+    if(conversationId){
+      filters.id = conversationId;
+    }
+
     logger.info('📤 Filters being sent to GHL API', { filters });
 
     // Fetch conversations from API
     const result = await ghlService.searchConversations(locationId, filters);
 
     const conversations = result.conversations || [];
-
+    console.log('conversations', conversations);
     res.json({
       success: true,
       message: 'Conversations downloaded successfully',
@@ -150,8 +106,16 @@ router.get('/download', authenticateSession, async (req, res) => {
           contactName: conv.contactName,
           lastMessageDate: conv.lastMessageDate,
           lastMessageBody: conv.lastMessageBody,
+          lastMessageType: conv.lastMessageType,
+          lastMessageDirection: conv.lastMessageDirection,
+          lastMessageAction: conv.lastMessageAction,
           unreadCount: conv.unreadCount,
-          type: conv.type
+          type: conv.type,
+          status: conv.status,
+          locationId: conv.locationId,
+          dateAdded: conv.dateAdded,
+          dateUpdated: conv.dateUpdated,
+          userId: conv.userId,
         }))
       },
       meta: {
