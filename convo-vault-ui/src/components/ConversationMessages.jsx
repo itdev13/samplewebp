@@ -43,6 +43,8 @@ export default function ConversationMessages({ conversation, onBack }) {
     refetchOnMount: 'always' // Always refetch on mount
   });
 
+  console.log('data', data);
+
   const messages = data?.data?.messages || [];
   const hasMore = data?.data?.pagination?.hasMore || false;
   const nextCursor = data?.data?.pagination?.nextCursor;
