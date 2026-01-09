@@ -19,7 +19,7 @@ const config = {
   },
   gmail: {
     user: 'rapiddev21@gmail.com',  // Replace with your Gmail
-    pass: 'byhp nojb ybxu rgwy' // Replace with Gmail App Password
+    pass: 'paaswd' // Replace with Gmail App Password
   }
 };
 
