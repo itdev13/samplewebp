@@ -14,7 +14,9 @@ export default function ConversationsTab({ onSelectConversation }) {
     limit: 20,
     startDate: '',
     endDate: '',
+    query: '',  // Universal search across multiple fields
     conversationId: '',
+    contactId: '',  // Filter by specific contact
     lastMessageType: '',
     lastMessageDirection: '',
     status: '',
@@ -77,9 +79,11 @@ export default function ConversationsTab({ onSelectConversation }) {
       while (hasMore && batchCount < 20) { // Max 2000 conversations
         const response = await conversationsAPI.download(location.id, {
           limit: exportLimit, // Use 100 for export, not user's filter limit
+          query: filters.query || undefined,  // Universal search
           startDate: filters.startDate || undefined,
           endDate: filters.endDate || undefined,
           conversationId: filters.conversationId || undefined,
+          contactId: filters.contactId || undefined,  // Filter by contact ID
           lastMessageType: filters.lastMessageType || undefined,
           lastMessageDirection: filters.lastMessageDirection || undefined,
           status: filters.status || undefined,
@@ -229,15 +233,42 @@ export default function ConversationsTab({ onSelectConversation }) {
           <svg className="w-5 h-5 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z" />
           </svg>
-          <h3 className="text-sm font-semibold text-gray-700">Filter Options</h3>
+          <h3 className="text-sm font-semibold text-gray-700">Search & Filters</h3>
         </div>
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
+          <div>
+            <div className="flex items-center gap-2 mb-2">
+              <label className="block text-sm font-medium text-gray-700">Search</label>
+              <Tooltip title="Searches across: Contact Name, Email, Company Name, Tags, Last Message Body, Subject, and Reviewer Name">
+                <svg className="w-4 h-4 text-gray-400 cursor-help" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+              </Tooltip>
+            </div>
+            <Input
+              value={filters.query}
+              onChange={(e) => setFilters({ ...filters, query: e.target.value })}
+              placeholder="Search conversations..."
+              size="large"
+            />
+          </div>
+
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">Conversation ID</label>
             <Input
               value={filters.conversationId}
               onChange={(e) => setFilters({ ...filters, conversationId: e.target.value })}
               placeholder="Filter by conversation ID"
+              size="large"
+            />
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">Contact ID</label>
+            <Input
+              value={filters.contactId}
+              onChange={(e) => setFilters({ ...filters, contactId: e.target.value })}
+              placeholder="Filter by contact ID"
               size="large"
             />
           </div>
