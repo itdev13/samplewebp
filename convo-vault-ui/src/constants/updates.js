@@ -14,14 +14,14 @@ export const APP_UPDATES = [
   {
     title: 'Date Range Filters',
     description: 'Filter conversations by Start Date and End Date for better reporting',
-    badge: 'upcoming',
+    badge: 'live',
     icon: '✓',
     color: 'green'
   },
   {
     title: 'Enhanced Email Exports',
     description: 'Subject, From, To, CC, BCC now included in separate email CSV files',
-    badge: 'upcoming',
+    badge: 'live',
     icon: '✓',
     color: 'green'
   }
