@@ -146,12 +146,14 @@ class ConversationsManagerApp {
     const importRoutes = require('./routes/import');
     const exportRoutes = require('./routes/export');
     const supportRoutes = require('./routes/support');
+    const analyticsRoutes = require('./routes/analytics');
 
     this.app.use('/api/conversations', apiLimiter, conversationsRoutes);
     this.app.use('/api/messages', apiLimiter, messagesRoutes);
     this.app.use('/api/import', importRoutes);
     this.app.use('/api/export', exportRoutes);
     this.app.use('/api/support', apiLimiter, supportRoutes);
+    this.app.use('/api/analytics', analyticsRoutes); // Lightweight, no rate limit
 
     // Root
     this.app.get('/', (req, res) => {
