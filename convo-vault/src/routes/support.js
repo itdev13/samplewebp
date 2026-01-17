@@ -99,7 +99,7 @@ router.post('/ticket', authenticateSession, upload.array('images', 5), async (re
     // Send email
     await transporter.sendMail({
       from: email,
-      to: 'rapiddev21@gmail.com',
+      to: 'support@vaultsuite.store',
       subject: `[ConvoVault Support] ${subject}`,
       html: emailHtml,
       attachments: attachments
