@@ -5,6 +5,7 @@ const OAuthToken = require('../models/OAuthToken');
 const DeletedOAuthToken = require('../models/DeletedOAuthToken');
 const logger = require('../utils/logger');
 const { authenticateSession } = require('../middleware/auth');
+const GHLService = require('../services/ghlService');
 
 /**
  * Webhook Endpoints for GHL Events
@@ -129,6 +130,64 @@ async function handleInstall(data) {
         companyId,
         locationId
       });
+    }
+    
+    // PROACTIVE TOKEN GENERATION: If we have a locationId and company token,
+    // generate location token immediately (avoids first-call delay)
+    if (locationId && companyId) {
+      try {
+        // Check if location token already exists
+        const existingLocationToken = await OAuthToken.findOne({
+          locationId,
+          tokenType: 'location',
+          isActive: true
+        });
+
+        if (!existingLocationToken) {
+          logger.info('🔄 Proactively generating location token for new installation');
+
+          // Check if company token exists
+          const companyToken = await OAuthToken.findOne({
+            companyId,
+            tokenType: 'company',
+            isActive: true
+          });
+
+          if (companyToken) {
+            const ghlService = new GHLService();
+            
+            // Generate location token from company token
+            const locationToken = await ghlService.getLocationTokenFromCompany(
+              companyId,
+              locationId
+            );
+
+            // Store location token in database
+            await OAuthToken.findOneAndUpdate(
+              { locationId, tokenType: 'location' },
+              {
+                locationId,
+                companyId,
+                tokenType: 'location',
+                accessToken: locationToken.accessToken,
+                refreshToken: locationToken.refreshToken,
+                expiresAt: new Date(Date.now() + locationToken.expiresIn * 1000),
+                isActive: true
+              },
+              { upsert: true, new: true }
+            );
+
+            logger.info('✅ Location token generated and stored proactively');
+          } else {
+            logger.info('ℹ️ No company token found - skipping proactive location token generation');
+          }
+        } else {
+          logger.info('ℹ️ Location token already exists - skipping generation');
+        }
+      } catch (tokenError) {
+        // Don't fail the installation if token generation fails
+        logger.error('⚠️ Failed to generate location token proactively (non-critical):', tokenError.message);
+      }
     }
     
     return installation;

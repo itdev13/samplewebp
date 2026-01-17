@@ -56,7 +56,7 @@ class GHLService {
       const response = await axios.post(`${this.oauthURL}/token`, params, {
         headers: { 'Content-Type': 'application/x-www-form-urlencoded' }
       });
-
+      console.log(JSON.stringify(response.data, null, 2));
       return {
         accessToken: response.data.access_token,
         refreshToken: response.data.refresh_token,
