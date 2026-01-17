@@ -56,7 +56,6 @@ class GHLService {
       const response = await axios.post(`${this.oauthURL}/token`, params, {
         headers: { 'Content-Type': 'application/x-www-form-urlencoded' }
       });
-      console.log(JSON.stringify(response.data, null, 2));
       return {
         accessToken: response.data.access_token,
         refreshToken: response.data.refresh_token,
@@ -345,7 +344,6 @@ class GHLService {
   async apiRequest(method, endpoint, locationId, data = null, params = null, retryCount = 0) {
     try {
     const accessToken = await this.getValidToken(locationId);
-    logger.info('🔍 Access token:', accessToken);
     const config = {
       method,
       url: `${this.baseURL}${endpoint}`,

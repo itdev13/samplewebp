@@ -94,12 +94,34 @@ export const AuthProvider = ({ children }) => {
       
       setLocation(response.location);
       setError(null);
-      setLoading(false);
       
+      // PROACTIVE TOKEN VALIDATION: Verify token health immediately
+      try {
+        console.log('[authenticateUser] Validating token health...');
+        await authAPI.getSession();
+        console.log('[authenticateUser] Token validation successful');
+      } catch (validationError) {
+        // Check if it's a token expiration error
+        const errorMsg = validationError.message || '';
+        if (errorMsg.includes('token expired') || 
+            errorMsg.includes('authentication has expired') ||
+            errorMsg.includes('Please reconnect') ||
+            errorMsg.includes('Company token expired')) {
+          console.error('[authenticateUser] Token already expired - needs reconnection');
+          setError('Your authentication has expired. Please reconnect the convo-vault app to your GHL account.');
+          setLoading(false);
+          return;
+        }
+        // Non-critical validation errors - continue anyway
+        console.warn('[authenticateUser] Token validation warning (non-critical):', errorMsg);
+      }
+      
+      setLoading(false);
       console.log('[authenticateUser] Session and location state updated successfully');
       
     } catch (err) {
-      const errorMessage = err.message || 'Authentication failed';
+      // Extract error message from various possible locations
+      const errorMessage = err.details || err.message || 'Authentication failed';
       console.error('[authenticateUser] Authentication failed:', errorMessage);
       
       setError(errorMessage);

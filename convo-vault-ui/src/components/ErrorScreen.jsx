@@ -2,13 +2,17 @@ import React from 'react';
 import { OAUTH_AUTHORIZE_URL } from '../constants/api';
 
 export default function ErrorScreen({ error }) {
-  const isNotConnected = error && error.includes('not connected');
-  const isInstallRequired = error === 'INSTALL_REQUIRED';
-  const isTokenExpired = error && (
-    error.includes('token expired') || 
-    error.includes('authentication has expired') ||
-    error.includes('Authentication failed') ||
-    error.includes('Please reconnect')
+  // Convert error object to string if needed
+  const errorString = typeof error === 'string' ? error : (error?.message || error?.details || String(error));
+  
+  const isNotConnected = errorString && errorString.includes('not connected');
+  const isInstallRequired = errorString === 'INSTALL_REQUIRED';
+  const isTokenExpired = errorString && (
+    errorString.includes('token expired') || 
+    errorString.includes('authentication has expired') ||
+    errorString.includes('Authentication failed') ||
+    errorString.includes('Please reconnect') ||
+    errorString.includes('Company token expired')
   );
   
   const needsReconnect = isNotConnected || isInstallRequired || isTokenExpired;
@@ -33,7 +37,7 @@ export default function ErrorScreen({ error }) {
               ? 'Your authentication session has expired. Please reconnect the app to continue.'
               : isInstallRequired 
                 ? 'ConvoVault is not installed in this sub-account. Please install the app first.'
-                : error
+                : errorString
             }
           </p>
           

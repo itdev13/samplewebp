@@ -37,16 +37,21 @@ apiClient.interceptors.response.use(
     }
     
     // Extract comprehensive error message from backend
-    const backendMessage = error.response?.data?.message || 
-                          error.response?.data?.error || 
-                          error.response?.data?.details;
+    // Priority: details > message > error
+    const backendDetails = error.response?.data?.details;
+    const backendMessage = error.response?.data?.message || error.response?.data?.error;
     
     let message;
+    let details;
     
     if (error.code === 'ECONNABORTED' || error.message?.includes('timeout')) {
       message = 'Request timeout. The server is taking too long to respond. Please try again.';
     } else if (error.code === 'ERR_NETWORK') {
       message = 'Network error. Please check your internet connection.';
+    } else if (backendDetails) {
+      // Details field often contains the specific error (like "Company token expired")
+      message = backendDetails;
+      details = backendDetails;
     } else if (backendMessage) {
       message = backendMessage;
     } else if (error.response?.status === 429) {
@@ -57,10 +62,11 @@ apiClient.interceptors.response.use(
       message = error.message || 'An unexpected error occurred';
     }
     
-    // Add status code to error for debugging
+    // Create enhanced error with all relevant info
     const enhancedError = new Error(message);
     enhancedError.status = error.response?.status;
     enhancedError.code = error.code;
+    enhancedError.details = details || backendDetails;
     
     return Promise.reject(enhancedError);
   }
