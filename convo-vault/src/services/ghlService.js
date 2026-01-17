@@ -72,12 +72,12 @@ class GHLService {
    * Generate location-level token from company token
    * Required when company-level token can't access location APIs
    */
-  async getLocationTokenFromCompany(companyId, locationId) {
+  async getLocationTokenFromCompany(companyId, locationId, retryCount = 0) {
     try {
       logger.info('Generating location token from company token');
       
       // Get company token
-      const companyToken = await OAuthToken.findOne({ 
+      let companyToken = await OAuthToken.findOne({ 
         companyId, 
         tokenType: 'company',
         isActive: true 
@@ -87,7 +87,25 @@ class GHLService {
         throw new Error('No company token found');
       }
 
-      // Call GHL API to get location token
+      // IMPORTANT: Refresh company token if it's expired/expiring
+      if (companyToken.needsRefresh()) {
+        logger.info('Company token needs refresh before generating location token');
+        try {
+          const refreshedToken = await this.refreshAccessToken(companyToken.refreshToken);
+          
+          companyToken.accessToken = refreshedToken.accessToken;
+          companyToken.refreshToken = refreshedToken.refreshToken;
+          companyToken.expiresAt = new Date(Date.now() + refreshedToken.expiresIn * 1000);
+          await companyToken.save();
+          
+          logger.info('✅ Company token refreshed successfully');
+        } catch (refreshError) {
+          logger.error('Failed to refresh company token:', refreshError.message);
+          throw new Error('Company token expired. Please reconnect your account.');
+        }
+      }
+
+      // Call GHL API to get location token using the valid company token
       const response = await axios.post(
         `${this.oauthURL}/locationToken`,
         {
@@ -111,6 +129,52 @@ class GHLService {
         expiresIn: response.data.expires_in
       };
     } catch (error) {
+      // If we get 401 and haven't retried yet, refresh company token and retry
+      if (error.response?.status === 401 && retryCount === 0) {
+        logger.info('🔄 Got 401 generating location token, refreshing company token and retrying...');
+        
+        try {
+          // Force refresh the company token
+          const companyToken = await OAuthToken.findOne({ 
+            companyId, 
+            tokenType: 'company',
+            isActive: true 
+          });
+          
+          if (!companyToken || !companyToken.refreshToken) {
+            throw new Error('No company refresh token available');
+          }
+
+          const refreshedToken = await this.refreshAccessToken(companyToken.refreshToken);
+          
+          companyToken.accessToken = refreshedToken.accessToken;
+          companyToken.refreshToken = refreshedToken.refreshToken;
+          companyToken.expiresAt = new Date(Date.now() + refreshedToken.expiresIn * 1000);
+          await companyToken.save();
+
+          logger.info('✅ Company token refreshed after 401, retrying location token generation');
+
+          // Retry ONCE
+          return await this.getLocationTokenFromCompany(companyId, locationId, retryCount + 1);
+
+        } catch (refreshError) {
+          logger.error('❌ Company token refresh failed:', refreshError.message);
+          const authError = new Error('Your authentication has expired. Please reconnect the convo-vault app to your GHL account.');
+          authError.status = 401;
+          authError.isClientError = true;
+          throw authError;
+        }
+      }
+
+      // If we get 401 even after refresh, the company token is invalid
+      if (error.response?.status === 401) {
+        logger.error('Company token is invalid or expired after retry. User needs to reconnect.');
+        const authError = new Error('Your authentication has expired. Please reconnect the convo-vault app to your GHL account.');
+        authError.status = 401;
+        authError.isClientError = true;
+        throw authError;
+      }
+      
       logger.error('Failed to generate location token:', error.response?.data || error.message);
       throw error;
     }
@@ -121,41 +185,60 @@ class GHLService {
    * Handles both location and company tokens
    */
   async getValidToken(locationId) {
-    let tokenDoc = await OAuthToken.findActiveToken(locationId);
-    
+    // STEP 1: Try to find location-specific token first (preferred)
+    let tokenDoc = await OAuthToken.findOne({ 
+      locationId, 
+      tokenType: 'location',
+      isActive: true 
+    });
+
+    // STEP 2: If no location token exists, check for company token
     if (!tokenDoc) {
-      const error = new Error('Invalid Location ID. Please reconnect convo-vault application to your account.');
-      error.status = 404;  // Not Found - location doesn't exist
-      error.isClientError = true;
-      throw error;
-    }
-
-    // If token is company-level, we need to generate a location token
-    if (tokenDoc.tokenType === 'company' || !tokenDoc.accessToken) {
-      logger.info('Converting company token to location token');
+      logger.info('No location token found, checking for company token');
       
-      const locationToken = await this.getLocationTokenFromCompany(
-        tokenDoc.companyId,
-        locationId
-      );
+      // Find any token with this locationId (might be company token)
+      const anyToken = await OAuthToken.findActiveToken(locationId);
+      
+      if (!anyToken) {
+        const error = new Error('Invalid Location ID. Please reconnect convo-vault application to your account.');
+        error.status = 404;  // Not Found - location doesn't exist
+        error.isClientError = true;
+        throw error;
+      }
 
-      // Update or create location-specific token
-      tokenDoc = await OAuthToken.findOneAndUpdate(
-        { locationId },
-        {
-          locationId,
-          companyId: tokenDoc.companyId,
-          tokenType: 'location',
-          accessToken: locationToken.accessToken,
-          refreshToken: locationToken.refreshToken,
-          expiresAt: new Date(Date.now() + locationToken.expiresIn * 1000),
-          isActive: true
-        },
-        { upsert: true, new: true }
-      );
+      // If it's a company token, convert it to location token
+      if (anyToken.tokenType === 'company') {
+        logger.info('Converting company token to location token');
+        
+        const locationToken = await this.getLocationTokenFromCompany(
+          anyToken.companyId,
+          locationId
+        );
+
+        // Create location-specific token (upsert to avoid duplicates)
+        tokenDoc = await OAuthToken.findOneAndUpdate(
+          { locationId, tokenType: 'location' },
+          {
+            locationId,
+            companyId: anyToken.companyId,
+            tokenType: 'location',
+            accessToken: locationToken.accessToken,
+            refreshToken: locationToken.refreshToken,
+            expiresAt: new Date(Date.now() + locationToken.expiresIn * 1000),
+            isActive: true
+          },
+          { upsert: true, new: true }
+        );
+        
+        logger.info('✅ Location token created and saved to database');
+      } else {
+        tokenDoc = anyToken;
+      }
+    } else {
+      logger.info('Using existing location token');
     }
 
-    // Refresh if needed
+    // STEP 3: Refresh if needed
     if (tokenDoc.needsRefresh()) {
       logger.info('Refreshing token for location:', locationId);
       const newToken = await this.refreshAccessToken(tokenDoc.refreshToken);
@@ -164,6 +247,8 @@ class GHLService {
       tokenDoc.refreshToken = newToken.refreshToken;
       tokenDoc.expiresAt = new Date(Date.now() + newToken.expiresIn * 1000);
       await tokenDoc.save();
+      
+      logger.info('✅ Token refreshed successfully');
     }
 
     return tokenDoc.accessToken;
@@ -258,7 +343,7 @@ class GHLService {
   async apiRequest(method, endpoint, locationId, data = null, params = null, retryCount = 0) {
     try {
     const accessToken = await this.getValidToken(locationId);
-    
+    logger.info('🔍 Access token:', accessToken);
     const config = {
       method,
       url: `${this.baseURL}${endpoint}`,
