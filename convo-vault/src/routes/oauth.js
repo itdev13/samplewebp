@@ -229,7 +229,7 @@ router.get('/callback', async (req, res) => {
               <div class="step-instruction">Look for <strong style="color: #2563EB;">"ConvoVault"</strong> in the left navigation menu</div>
               <div class="step-instruction">Click to launch the app</div>
               <p style="color: #6B7280; font-size: 12px; margin-top: 12px; font-style: italic;">
-                💡 ConvoVault will appear as a new menu item in your sidebar
+                💡 ConvoVault will appear as a new menu item in your sub-account's left navigation menu
               </p>
             </div>
             
