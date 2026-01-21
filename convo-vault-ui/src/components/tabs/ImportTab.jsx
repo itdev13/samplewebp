@@ -30,12 +30,12 @@ export default function ImportTab() {
     const file = e.target.files[0];
     if (!file) return;
 
-    // Check file size (20MB limit)
-    const maxSize = 20 * 1024 * 1024; // 20MB
+    // Check file size (5MB limit)
+    const maxSize = 5 * 1024 * 1024; // 5MB
     if (file.size > maxSize) {
       setJobStatus({
         status: 'failed',
-        error: `File size exceeds 20MB limit. Your file is ${(file.size / 1024 / 1024).toFixed(2)}MB. Please contact support to increase your limit.`
+        error: `File size exceeds 5MB limit. Your file is ${(file.size / 1024 / 1024).toFixed(2)}MB. Maximum 2,000 contacts per import. Please split your file into smaller batches.`
       });
       setFileInputKey(Date.now()); // Reset file input
       return;
@@ -229,7 +229,7 @@ export default function ImportTab() {
                   CSV, XLSX, XLS files supported
                 </div>
                 <div className="text-xs text-gray-400 mt-1">
-                  Maximum file size: 20MB
+                  Maximum file size: 5MB or 2,000 contacts
                 </div>
                 <div className="text-xs text-purple-600 mt-2 font-medium">
                   💡 Need larger limits? Contact our Support team to request an increase

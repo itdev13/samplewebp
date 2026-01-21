@@ -19,7 +19,7 @@ const { authenticateSession } = require('../middleware/auth');
 // Configure multer for file uploads
 const upload = multer({
   dest: 'uploads/',
-  limits: { fileSize: 20 * 1024 * 1024 }, // 20MB limit
+  limits: { fileSize: 5 * 1024 * 1024 }, // 5MB limit
   fileFilter: (req, file, cb) => {
     const allowedTypes = ['.csv', '.xlsx', '.xls'];
     const ext = path.extname(file.originalname).toLowerCase();
@@ -31,6 +31,9 @@ const upload = multer({
     }
   }
 });
+
+// Maximum contacts per import
+const MAX_CONTACTS_PER_IMPORT = 2000;
 
 /**
  * @route POST /api/import/upload
@@ -75,6 +78,18 @@ router.post('/upload', authenticateSession, upload.single('file'), async (req, r
     }
 
     logger.info(`Parsed ${messages.length} messages from file`);
+
+    // Check maximum contacts limit
+    if (messages.length > MAX_CONTACTS_PER_IMPORT) {
+      // Clean up uploaded file
+      if (fs.existsSync(req.file.path)) {
+        fs.unlinkSync(req.file.path);
+      }
+      
+      return res.status(400).json({
+        error: `File contains ${messages.length} contacts, which exceeds the maximum limit of ${MAX_CONTACTS_PER_IMPORT} contacts per import. Please split your file into smaller batches.`
+      });
+    }
 
     // Create import job in database
     const job = await ImportJob.create({
