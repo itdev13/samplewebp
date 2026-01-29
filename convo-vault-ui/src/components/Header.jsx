@@ -147,17 +147,6 @@ export default function Header() {
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
                 </svg>
               </button>
-              
-              {/* Tooltip */}
-              {showApiTooltip && (
-                <div className="absolute top-full right-0 mt-2 w-64 bg-gray-900 text-white text-xs rounded-lg p-3 shadow-xl z-50 animate-fade-in">
-                  <div className="font-semibold mb-1">📖 API Documentation</div>
-                  <div className="text-gray-300">
-                    Access complete API reference with your personal token. Use these APIs to integrate ConvoVault with your website or other applications.
-                  </div>
-                  <div className="absolute -top-1 right-4 w-2 h-2 bg-gray-900 transform rotate-45"></div>
-                </div>
-              )}
             </div>
 
             {/* Sub-Account Name */}
