@@ -1,0 +1,103 @@
+const mongoose = require('mongoose');
+
+/**
+ * Billing Transaction Model - Track export charges via GHL Marketplace billing
+ */
+const billingTransactionSchema = new mongoose.Schema({
+  locationId: {
+    type: String,
+    required: true,
+    index: true
+  },
+
+  companyId: {
+    type: String,
+    required: true,
+    index: true
+  },
+
+  // Transaction type: export_conversations or export_messages
+  type: {
+    type: String,
+    enum: ['export_conversations', 'export_messages'],
+    required: true
+  },
+
+  // GHL Billing charge ID(s) - comma separated if multiple meters charged
+  ghlChargeId: {
+    type: String,
+    default: null
+  },
+
+  // Reference to the export job
+  exportJobId: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'ExportJob',
+    default: null
+  },
+
+  // Item counts for billing
+  itemCounts: {
+    conversations: { type: Number, default: 0 },
+    smsMessages: { type: Number, default: 0 },
+    whatsappMessages: { type: Number, default: 0 },
+    emailMessages: { type: Number, default: 0 },
+    total: { type: Number, default: 0 }
+  },
+
+  // Pricing breakdown (all amounts in cents)
+  pricing: {
+    baseAmount: { type: Number, required: true },
+    discountPercent: { type: Number, default: 0 },
+    discountAmount: { type: Number, default: 0 },
+    finalAmount: { type: Number, required: true }
+  },
+
+  // Meter charges sent to GHL
+  meterCharges: [{
+    meterId: String,
+    qty: Number,
+    description: String
+  }],
+
+  // Transaction status
+  status: {
+    type: String,
+    enum: ['pending', 'charged', 'failed', 'refunded'],
+    default: 'pending'
+  },
+
+  // Error message if failed
+  errorMessage: {
+    type: String,
+    default: null
+  },
+
+  // User who initiated the transaction
+  userId: {
+    type: String,
+    default: null
+  }
+
+}, {
+  timestamps: true
+});
+
+// Compound indexes for common queries
+billingTransactionSchema.index({ locationId: 1, createdAt: -1 });
+billingTransactionSchema.index({ companyId: 1, status: 1, createdAt: -1 });
+
+// Get recent transactions for a location
+billingTransactionSchema.statics.getRecentTransactions = async function(locationId, limit = 20) {
+  return await this.find({ locationId })
+    .sort({ createdAt: -1 })
+    .limit(limit);
+};
+
+// Get transactions by status
+billingTransactionSchema.statics.getByStatus = async function(locationId, status) {
+  return await this.find({ locationId, status })
+    .sort({ createdAt: -1 });
+};
+
+module.exports = mongoose.model('BillingTransaction', billingTransactionSchema);
