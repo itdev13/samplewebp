@@ -29,7 +29,8 @@
     "nodemailer": "^6.9.7",
     "validator": "^13.11.0",
     "winston": "^3.11.0",
-    "xlsx": "^0.18.5"
+    "xlsx": "^0.18.5",
+    "aws-sdk": "^2.1692.0"
   },
   "devDependencies": {
     "nodemon": "^3.0.1"
