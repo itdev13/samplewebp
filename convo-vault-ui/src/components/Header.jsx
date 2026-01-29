@@ -162,7 +162,7 @@ export default function Header() {
 
             {/* Sub-Account Name */}
             <div className="bg-white/10 backdrop-blur-sm rounded-lg px-6 py-3 border border-white/20 flex items-baseline gap-2">
-              <div className="text-lg text-blue-100 font-medium mb-1">Sub Account -</div>
+              <div className="text-lg text-blue-100 font-medium mb-1">Account -</div>
               <div className="text-white font-bold text-lg">
                 {location?.name || 'Loading...'}
               </div>
