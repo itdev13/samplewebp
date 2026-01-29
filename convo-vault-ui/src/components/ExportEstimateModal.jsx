@@ -1,0 +1,229 @@
+import React, { useState } from 'react';
+import { Modal, Button, Spin, Alert, Input, Collapse } from 'antd';
+
+const { Panel } = Collapse;
+
+export default function ExportEstimateModal({
+  visible,
+  onCancel,
+  onConfirm,
+  loading = false,
+  estimating = false,
+  estimate = null,
+  error = null,
+  exportType = 'messages'
+}) {
+  const [email, setEmail] = useState('');
+
+  // Format cents to dollars
+  const formatCurrency = (cents) => {
+    return `$${(cents / 100).toFixed(2)}`;
+  };
+
+  // Format large numbers
+  const formatNumber = (num) => {
+    return num?.toLocaleString() || '0';
+  };
+
+  const handleConfirm = () => {
+    onConfirm(email || null);
+  };
+
+  return (
+    <Modal
+      open={visible}
+      onCancel={onCancel}
+      title={
+        <div className="flex items-center gap-3">
+          <div className="w-10 h-10 bg-green-100 rounded-full flex items-center justify-center">
+            <svg className="w-6 h-6 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4" />
+            </svg>
+          </div>
+          <div>
+            <h3 className="text-lg font-bold text-gray-900">Export Estimate</h3>
+            <p className="text-sm text-gray-500">Review your export cost</p>
+          </div>
+        </div>
+      }
+      footer={null}
+      width={520}
+      centered
+    >
+      {/* Loading State */}
+      {estimating && (
+        <div className="flex flex-col justify-center items-center py-12">
+          <Spin size="large" />
+          <span className="mt-4 text-gray-600">Calculating estimate...</span>
+        </div>
+      )}
+
+      {/* Error State */}
+      {error && !estimating && (
+        <Alert
+          type="error"
+          message="Error"
+          description={error}
+          className="mb-4"
+          showIcon
+        />
+      )}
+
+      {/* Estimate Content */}
+      {estimate && !estimating && (
+        <div className="space-y-5 py-2">
+          {/* Export Summary */}
+          <div className="bg-gray-50 rounded-lg p-4 border border-gray-200">
+            <h4 className="font-semibold text-gray-700 mb-3 flex items-center gap-2">
+              <svg className="w-5 h-5 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+              </svg>
+              Export Summary
+            </h4>
+            <div className="space-y-2 text-sm">
+              {/* Conversations */}
+              {estimate.breakdown?.conversations?.count > 0 && (
+                <div className="flex justify-between items-center py-1">
+                  <span className="text-gray-600">Conversations</span>
+                  <span className="font-medium">
+                    {formatNumber(estimate.breakdown.conversations.count)} x 1¢ = {formatCurrency(estimate.breakdown.conversations.subtotal)}
+                  </span>
+                </div>
+              )}
+
+              {/* SMS/WhatsApp Messages */}
+              {estimate.breakdown?.smsWhatsapp?.count > 0 && (
+                <div className="flex justify-between items-center py-1">
+                  <span className="text-gray-600">SMS/WhatsApp Messages</span>
+                  <span className="font-medium">
+                    {formatNumber(estimate.breakdown.smsWhatsapp.count)} x 1¢ = {formatCurrency(estimate.breakdown.smsWhatsapp.subtotal)}
+                  </span>
+                </div>
+              )}
+
+              {/* Email Messages */}
+              {estimate.breakdown?.email?.count > 0 && (
+                <div className="flex justify-between items-center py-1">
+                  <span className="text-gray-600">Email Messages</span>
+                  <span className="font-medium">
+                    {formatNumber(estimate.breakdown.email.count)} x 3¢ = {formatCurrency(estimate.breakdown.email.subtotal)}
+                  </span>
+                </div>
+              )}
+
+              {/* Total Items */}
+              <div className="flex justify-between items-center pt-2 border-t border-gray-200 text-gray-700">
+                <span className="font-medium">Total Items</span>
+                <span className="font-semibold">{formatNumber(estimate.itemCounts?.total)}</span>
+              </div>
+            </div>
+          </div>
+
+          {/* Pricing Breakdown */}
+          <div className="bg-blue-50 rounded-lg p-4 border border-blue-200">
+            <div className="space-y-2 text-sm">
+              <div className="flex justify-between items-center">
+                <span className="text-gray-700">Subtotal</span>
+                <span className="font-medium">{formatCurrency(estimate.baseAmount)}</span>
+              </div>
+
+              {estimate.discountPercent > 0 && (
+                <div className="flex justify-between items-center text-green-600">
+                  <span className="flex items-center gap-1">
+                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z" />
+                    </svg>
+                    Volume Discount ({estimate.discountPercent}%)
+                  </span>
+                  <span className="font-medium">-{formatCurrency(estimate.discountAmount)}</span>
+                </div>
+              )}
+
+              <div className="flex justify-between items-center pt-3 border-t border-blue-200">
+                <span className="text-lg font-bold text-gray-800">Total</span>
+                <span className="text-xl font-bold text-green-600">{formatCurrency(estimate.finalAmount)}</span>
+              </div>
+            </div>
+          </div>
+
+          {/* Volume Discount Info */}
+          <Collapse ghost className="bg-gray-50 rounded-lg">
+            <Panel
+              header={
+                <span className="text-xs text-gray-600 font-medium">
+                  View Volume Discount Tiers
+                </span>
+              }
+              key="1"
+            >
+              <div className="text-xs text-gray-500 space-y-1">
+                <div className="flex justify-between"><span>1 - 1,000 items</span><span>0% discount</span></div>
+                <div className="flex justify-between"><span>1,000 - 2,000 items</span><span>20% discount</span></div>
+                <div className="flex justify-between"><span>2,000 - 5,000 items</span><span>40% discount</span></div>
+                <div className="flex justify-between"><span>5,000 - 8,000 items</span><span>50% discount</span></div>
+                <div className="flex justify-between"><span>8,000 - 30,000 items</span><span>60% discount</span></div>
+                <div className="flex justify-between"><span>30,000+ items</span><span>70% discount</span></div>
+              </div>
+            </Panel>
+          </Collapse>
+
+          {/* Email Notification */}
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              Notification Email (optional)
+            </label>
+            <Input
+              type="email"
+              placeholder="Enter email to receive download link"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              size="large"
+              prefix={
+                <svg className="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+                </svg>
+              }
+            />
+            <p className="text-xs text-gray-500 mt-1.5">
+              Export runs in the background. We'll email you when it's ready.
+            </p>
+          </div>
+
+          {/* Payment Info */}
+          <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-3 flex items-start gap-2">
+            <svg className="w-5 h-5 text-yellow-600 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+            </svg>
+            <p className="text-sm text-yellow-800">
+              Payment will be deducted from your <strong>CRM wallet balance</strong>. No card required.
+            </p>
+          </div>
+
+          {/* Action Buttons */}
+          <div className="flex gap-3 pt-2">
+            <Button
+              onClick={onCancel}
+              className="flex-1 h-11"
+              disabled={loading}
+            >
+              Cancel
+            </Button>
+            <Button
+              type="primary"
+              onClick={handleConfirm}
+              loading={loading}
+              className="flex-1 h-11 bg-green-600 hover:bg-green-700 border-green-600 hover:border-green-700"
+              icon={
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z" />
+                </svg>
+              }
+            >
+              {loading ? 'Processing...' : `Pay ${formatCurrency(estimate.finalAmount)} & Export`}
+            </Button>
+          </div>
+        </div>
+      )}
+    </Modal>
+  );
+}
