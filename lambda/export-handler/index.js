@@ -253,7 +253,7 @@ async function sendEmail(email, downloadUrl, jobDetails) {
         email: EMAIL_FROM_ADDRESS
       },
       to: [{ email: email }],
-      subject: 'Your VaultSuite Export is Ready',
+      subject: `Your ${jobDetails.exportType === 'conversations' ? 'Conversations' : 'Messages'} Export is Ready`,
       htmlContent: `
         <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
           <h2 style="color: #10B981;">Your Export is Ready!</h2>
