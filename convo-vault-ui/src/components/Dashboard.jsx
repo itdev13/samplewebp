@@ -26,7 +26,7 @@ export default function Dashboard() {
   const tabs = [
     { id: 'conversations', label: 'Conversations', icon: '💬' },
     { id: 'messages', label: 'Messages', icon: '📊' },
-    { id: 'exports', label: 'Exports', icon: '📤' },
+    { id: 'exports', label: 'Export History', icon: '📤' },
     // { id: 'import', label: 'Import', icon: '📥' },
     { id: 'support', label: 'Support', icon: '🆘' }
   ];
