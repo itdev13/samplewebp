@@ -5,6 +5,9 @@ const logger = require('../utils/logger');
  * Billing Service - Handle pricing calculations and GHL Marketplace billing
  */
 
+// App ID for rebilling config
+const APP_ID = process.env.GHL_APP_ID || '694f93f8a6babf0c821b1356';
+
 // Meter IDs for GHL Marketplace billing
 const METER_IDS = {
   conversations: '697bc5c63b7d446bf5348be6',
@@ -12,12 +15,16 @@ const METER_IDS = {
   email: '697bc4342605e37af1f2f385'
 };
 
-// Unit prices in cents (must match GHL meter config)
-const UNIT_PRICES = {
-  conversations: 1,    // 1 cent per conversation
-  smsWhatsapp: 1,      // 1 cent per text message
-  email: 3             // 3 cents per email message
+// Default unit prices in cents (fallback if API fails)
+const DEFAULT_UNIT_PRICES = {
+  conversations: 0.05,    // 1 cent per conversation
+  smsWhatsapp: 0.05,      // 1 cent per text message
+  email: 0.3             // 3 cents per email message
 };
+
+// Cached prices from GHL API
+let cachedPrices = null;
+let cacheExpiry = null;
 
 // Volume discount tiers
 const DISCOUNT_TIERS = [
@@ -31,6 +38,61 @@ const DISCOUNT_TIERS = [
 class BillingService {
   constructor() {
     this.baseURL = process.env.GHL_API_URL || 'https://services.leadconnectorhq.com';
+  }
+
+  /**
+   * Fetch rebilling config from GHL to get actual meter prices
+   * @param {string} accessToken - GHL access token
+   * @returns {Object} Prices per meter in cents
+   */
+  async fetchMeterPrices(accessToken) {
+    // Return cached if still valid (cache for 1 hour)
+    if (cachedPrices && cacheExpiry && Date.now() < cacheExpiry) {
+      return cachedPrices;
+    }
+
+    try {
+      const response = await axios.get(
+        `${this.baseURL}/marketplace/billing/charges/rebilling-config/${APP_ID}`,
+        {
+          headers: {
+            'Authorization': `Bearer ${accessToken}`,
+            'Content-Type': 'application/json',
+            'Version': '2021-07-28'
+          }
+        }
+      );
+
+      const config = response.data;
+      logger.info('Fetched rebilling config:', config);
+
+      // Extract prices from meters
+      const prices = { ...DEFAULT_UNIT_PRICES };
+
+      if (config.meters && Array.isArray(config.meters)) {
+        config.meters.forEach(meter => {
+          if (meter.meterId === METER_IDS.conversations) {
+            prices.conversations = meter.centsPrice || DEFAULT_UNIT_PRICES.conversations;
+          } else if (meter.meterId === METER_IDS.smsWhatsapp) {
+            prices.smsWhatsapp = meter.centsPrice || DEFAULT_UNIT_PRICES.smsWhatsapp;
+          } else if (meter.meterId === METER_IDS.email) {
+            prices.email = meter.centsPrice || DEFAULT_UNIT_PRICES.email;
+          }
+        });
+      }
+
+      // Cache for 1 hour
+      cachedPrices = prices;
+      cacheExpiry = Date.now() + (60 * 60 * 1000);
+
+      return prices;
+    } catch (error) {
+      logger.error('Failed to fetch rebilling config:', {
+        error: error.response?.data || error.message
+      });
+      // Return defaults on error
+      return DEFAULT_UNIT_PRICES;
+    }
   }
 
   /**
@@ -58,19 +120,23 @@ class BillingService {
   /**
    * Calculate pricing estimate for export
    * @param {Object} counts - Item counts { conversations, smsMessages, emailMessages }
+   * @param {Object} prices - Optional prices (if not provided, uses defaults)
    * @returns {Object} Pricing estimate with breakdown
    */
-  calculateEstimate(counts) {
+  calculateEstimate(counts, prices = null) {
     const {
       conversations = 0,
       smsMessages = 0,
       emailMessages = 0
     } = counts;
 
+    // Use provided prices or defaults
+    const unitPrices = prices || DEFAULT_UNIT_PRICES;
+
     // Calculate base amounts (in cents)
-    const conversationsCost = conversations * UNIT_PRICES.conversations;
-    const textMessagesCost = smsMessages * UNIT_PRICES.smsWhatsapp;
-    const emailCost = emailMessages * UNIT_PRICES.email;
+    const conversationsCost = conversations * unitPrices.conversations;
+    const textMessagesCost = smsMessages * unitPrices.smsWhatsapp;
+    const emailCost = emailMessages * unitPrices.email;
 
     const baseAmount = conversationsCost + textMessagesCost + emailCost;
     const totalItems = conversations + smsMessages + emailMessages;
@@ -90,17 +156,17 @@ class BillingService {
       breakdown: {
         conversations: {
           count: conversations,
-          unitPrice: UNIT_PRICES.conversations,
+          unitPrice: unitPrices.conversations,
           subtotal: conversationsCost
         },
         smsWhatsapp: {
           count: smsMessages,
-          unitPrice: UNIT_PRICES.smsWhatsapp,
+          unitPrice: unitPrices.smsWhatsapp,
           subtotal: textMessagesCost
         },
         email: {
           count: emailMessages,
-          unitPrice: UNIT_PRICES.email,
+          unitPrice: unitPrices.email,
           subtotal: emailCost
         }
       },
@@ -110,6 +176,17 @@ class BillingService {
       finalAmount,
       finalAmountDollars: (finalAmount / 100).toFixed(2)
     };
+  }
+
+  /**
+   * Calculate estimate with fetched prices from GHL
+   * @param {Object} counts - Item counts
+   * @param {string} accessToken - GHL access token
+   * @returns {Object} Pricing estimate with actual GHL prices
+   */
+  async calculateEstimateWithPrices(counts, accessToken) {
+    const prices = await this.fetchMeterPrices(accessToken);
+    return this.calculateEstimate(counts, prices);
   }
 
   /**
@@ -249,10 +326,10 @@ class BillingService {
   }
 
   /**
-   * Get unit prices (for reference)
+   * Get unit prices (returns cached prices if available, otherwise defaults)
    */
   getUnitPrices() {
-    return { ...UNIT_PRICES };
+    return cachedPrices ? { ...cachedPrices } : { ...DEFAULT_UNIT_PRICES };
   }
 }
 

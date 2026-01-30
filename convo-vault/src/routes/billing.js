@@ -131,8 +131,12 @@ router.post('/estimate', authenticateSession, async (req, res) => {
       }
     }
 
-    // Calculate estimate
-    const estimate = billingService.calculateEstimate(counts);
+    // Get access token to fetch actual prices from GHL
+    const tokenData = await ghlService.getValidToken(locationId);
+    const accessToken = tokenData.accessToken || tokenData;
+
+    // Calculate estimate with actual GHL meter prices
+    const estimate = await billingService.calculateEstimateWithPrices(counts, accessToken);
 
     res.json({
       success: true,
@@ -242,12 +246,12 @@ router.post('/charge-and-export', authenticateSession, async (req, res) => {
       });
     }
 
-    // Step 2: Calculate pricing
-    const estimate = billingService.calculateEstimate(counts);
-
-    // Step 3: Get access token for billing API
+    // Step 2: Get access token for billing API
     const tokenData = await ghlService.getValidToken(locationId);
     const accessToken = tokenData.accessToken || tokenData;
+
+    // Step 3: Calculate pricing with actual GHL meter prices
+    const estimate = await billingService.calculateEstimateWithPrices(counts, accessToken);
 
     // Step 4: Check wallet funds
     const hasFunds = await billingService.hasFunds(companyId, accessToken);
