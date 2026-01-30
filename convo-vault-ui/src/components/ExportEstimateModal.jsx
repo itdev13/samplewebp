@@ -16,19 +16,21 @@ export default function ExportEstimateModal({
   console.log("estimates: ", estimate);
   const [email, setEmail] = useState('');
 
-  // Format cents to dollars
-  const formatCurrency = (cents) => {
-    return `$${(cents).toFixed(2)}`;
+  // Format currency (value is in dollars)
+  const formatCurrency = (value) => {
+    const num = Number(value) || 0;
+    return `$${num.toFixed(2)}`;
   };
 
   // Format large numbers
   const formatNumber = (num) => {
-    return num?.toLocaleString() || '0';
+    return (Number(num) || 0).toLocaleString();
   };
 
   // Format unit price for display (price is in dollars, e.g., 0.05 = $0.05)
   const formatUnitPrice = (price) => {
-    return `$${price.toFixed(2)}`;
+    const num = Number(price) || 0;
+    return `$${num.toFixed(2)}`;
   };
 
   const handleConfirm = () => {
