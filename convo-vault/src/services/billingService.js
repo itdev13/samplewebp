@@ -68,14 +68,14 @@ class BillingService {
 
       // Extract prices from meters
       const prices = { ...DEFAULT_UNIT_PRICES };
-      if (config.subscription && Array.isArray(config.subscription)) {
-        config.subscriptions.forEach(meter => {
-          if (meter.planId === METER_IDS.conversations) {
-            prices.conversations = meter.baseAmount || DEFAULT_UNIT_PRICES.conversations;
-          } else if (meter.planId === METER_IDS.smsWhatsapp) {
-            prices.smsWhatsapp = meter.baseAmount || DEFAULT_UNIT_PRICES.smsWhatsapp;
-          } else if (meter.planId === METER_IDS.email) {
-            prices.email = meter.baseAmount || DEFAULT_UNIT_PRICES.email;
+      if (config.usage && Array.isArray(config.usage)) {
+        config?.usage?.forEach(meter => {
+          if (meter.meterId === METER_IDS.conversations) {
+            prices.conversations = meter.fixedPricePerUnit || DEFAULT_UNIT_PRICES.conversations;
+          } else if (meter.meterId === METER_IDS.smsWhatsapp) {
+            prices.smsWhatsapp = meter.fixedPricePerUnit || DEFAULT_UNIT_PRICES.smsWhatsapp;
+          } else if (meter.meterId === METER_IDS.email) {
+            prices.email = meter.fixedPricePerUnit || DEFAULT_UNIT_PRICES.email;
           }
         });
       }
