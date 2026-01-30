@@ -324,9 +324,10 @@ export default function MessagesTab() {
                 { value: 'SMS', label: 'SMS' },
                 { value: 'Email', label: 'Email' },
                 { value: 'WhatsApp', label: 'WhatsApp' },
-                { value: 'FB', label: 'Facebook' },
-                { value: 'GMB', label: 'Google My Business' },
-                { value: 'Call', label: 'Call' }
+                { value: 'Facebook', label: 'Facebook' },
+                { value: 'Instagram', label: 'Instagram' },
+                // { value: 'GMB', label: 'Google My Business' },
+                // { value: 'Call', label: 'Call' }
               ]}
             />
           </div>

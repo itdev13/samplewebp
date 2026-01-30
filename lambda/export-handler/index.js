@@ -188,24 +188,89 @@ function conversationsToCSV(conversations, includeHeader = true) {
 
 /**
  * Convert messages to CSV format
+ * @param {Array} messages - Messages to convert
+ * @param {boolean} includeHeader - Include CSV header row
+ * @param {string} channelFilter - Channel filter (Email, SMS, Call, Facebook, Instagram, WhatsApp, etc.)
  */
-function messagesToCSV(messages, includeHeader = true) {
-  const header = includeHeader
-    ? 'Date,ConversationID,ContactID,Type,Direction,Status,Message\n'
-    : '';
+function messagesToCSV(messages, includeHeader = true, channelFilter = '') {
+  const isEmailExport = channelFilter === 'Email';
+
+  // Different headers based on channel type
+  let header = '';
+  if (includeHeader) {
+    if (isEmailExport) {
+      // Email-specific columns with Subject, CC, BCC
+      header = 'Date,ConversationID,ContactID,MessageType,Direction,Status,From,To,Subject,CC,BCC,Message,Attachments,Source\n';
+    } else {
+      // Default for SMS, WhatsApp, Facebook, Instagram, Call, etc. - includes meta fields
+      header = 'Date,ConversationID,ContactID,MessageType,Direction,Status,From,To,Message,Attachments,Source,CallDuration,CallStatus,FacebookPage,InstagramPage\n';
+    }
+  }
 
   const rows = messages.map(msg => {
     const direction = msg.direction || msg?.meta?.email?.direction || 'outbound';
+    const isEmail = msg.messageType === 'TYPE_EMAIL' || msg.messageType === 'TYPE_CAMPAIGN_EMAIL' || msg.messageType === 'TYPE_CUSTOM_EMAIL' || msg.messageType === 'TYPE_CUSTOM_PROVIDER_EMAIL';
 
-    return [
-      escapeCsv(formatDate(msg.dateAdded)),
-      escapeCsv(msg.conversationId),
-      escapeCsv(msg.contactId),
-      escapeCsv(msg.type),
-      escapeCsv(direction),
-      escapeCsv(msg.status),
-      escapeCsv(msg.body)
-    ].join(',');
+    // For emails, get email-specific fields from meta
+    const emailMeta = msg.meta?.email || {};
+    const subject = emailMeta.subject || '';
+    const cc = emailMeta.cc || '';
+    const bcc = emailMeta.bcc || '';
+
+    // From/To: for emails use email addresses, for others use phone numbers
+    const from = (isEmail ? emailMeta.from : msg.from) || '';
+    const to = (isEmail ? emailMeta.to : msg.to) || '';
+
+    // Attachments as semicolon-separated URLs
+    const attachments = Array.isArray(msg.attachments) ? msg.attachments.join('; ') : '';
+
+    // Source (workflow, bulk_actions, campaign, api, app)
+    const source = msg.source || '';
+
+    // Meta fields for non-email exports
+    const callDuration = msg.meta?.callDuration || '';
+    const callStatus = msg.meta?.callStatus || '';
+    const fbPage = msg.meta?.fb?.page_name || '';
+    const igPage = msg.meta?.ig?.page_name || '';
+
+    // Build row based on export type
+    if (isEmailExport) {
+      return [
+        escapeCsv(formatDate(msg.dateAdded)),
+        escapeCsv(msg.conversationId),
+        escapeCsv(msg.contactId),
+        escapeCsv(msg.messageType || msg.type),
+        escapeCsv(direction),
+        escapeCsv(msg.status),
+        escapeCsv(from),
+        escapeCsv(to),
+        escapeCsv(subject),
+        escapeCsv(cc),
+        escapeCsv(bcc),
+        escapeCsv(msg.body),
+        escapeCsv(attachments),
+        escapeCsv(source)
+      ].join(',');
+    } else {
+      // Default for all other channels - includes meta fields
+      return [
+        escapeCsv(formatDate(msg.dateAdded)),
+        escapeCsv(msg.conversationId),
+        escapeCsv(msg.contactId),
+        escapeCsv(msg.messageType || msg.type),
+        escapeCsv(direction),
+        escapeCsv(msg.status),
+        escapeCsv(from),
+        escapeCsv(to),
+        escapeCsv(msg.body),
+        escapeCsv(attachments),
+        escapeCsv(source),
+        escapeCsv(callDuration),
+        escapeCsv(callStatus),
+        escapeCsv(fbPage),
+        escapeCsv(igPage)
+      ].join(',');
+    }
   }).join('\n');
 
   return header + rows + (rows.length > 0 ? '\n' : '');
@@ -567,7 +632,7 @@ exports.handler = async (event, context) => {
       } else {
         content = job.exportType === 'conversations'
           ? conversationsToCSV(records, isFirstPart)
-          : messagesToCSV(records, isFirstPart);
+          : messagesToCSV(records, isFirstPart, job.filters?.channel || '');
       }
 
       const contentSize = Buffer.byteLength(content);
