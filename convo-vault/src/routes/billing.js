@@ -12,7 +12,11 @@ const { authenticateSession } = require('../middleware/auth');
 
 // Initialize AWS Lambda client
 const lambda = new AWS.Lambda({
-  region: process.env.AWS_REGION || 'us-east-1'
+  region: process.env.AWS_REGION || 'us-east-1',
+  credentials: {
+    accessKeyId: process.env.AWS_ACCESS_KEY_ID,
+    secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY,
+  }
 });
 
 const LAMBDA_FUNCTION_NAME = process.env.EXPORT_LAMBDA_FUNCTION_NAME || 'convo-vault-export';
@@ -371,7 +375,7 @@ router.post('/charge-and-export', authenticateSession, async (req, res) => {
         error: lambdaError.message
       });
 
-      exportJob.status = 'pending';
+      exportJob.status = 'failed';
       exportJob.errorMessage = `Lambda invocation failed: ${lambdaError.message}`;
       await exportJob.save();
     }

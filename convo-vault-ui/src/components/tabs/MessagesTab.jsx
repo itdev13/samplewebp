@@ -133,7 +133,7 @@ export default function MessagesTab() {
       } catch (err) {
         console.error('Failed to poll job status:', err);
       }
-    }, 3000);
+    }, 5000);
 
     return () => clearInterval(pollInterval);
   }, [activeJob?.jobId, activeJob?.status, location?.id]);
