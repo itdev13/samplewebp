@@ -6,6 +6,7 @@ import ConversationsTab from './tabs/ConversationsTab';
 import MessagesTab from './tabs/MessagesTab';
 import ImportTab from './tabs/ImportTab';
 import SupportTab from './tabs/SupportTab';
+import ExportTab from './tabs/ExportTab';
 import ConversationMessages from './ConversationMessages';
 
 export default function Dashboard() {
@@ -25,6 +26,7 @@ export default function Dashboard() {
   const tabs = [
     { id: 'conversations', label: 'Conversations', icon: '💬' },
     { id: 'messages', label: 'Messages', icon: '📊' },
+    { id: 'exports', label: 'Exports', icon: '📤' },
     // { id: 'import', label: 'Import', icon: '📥' },
     { id: 'support', label: 'Support', icon: '🆘' }
   ];
@@ -101,6 +103,7 @@ export default function Dashboard() {
                 <ConversationsTab onSelectConversation={handleConversationSelect} />
               )}
               {activeTab === 'messages' && <MessagesTab />}
+              {activeTab === 'exports' && <ExportTab />}
               {activeTab === 'import' && <ImportTab />}
               {activeTab === 'support' && <SupportTab />}
             </>

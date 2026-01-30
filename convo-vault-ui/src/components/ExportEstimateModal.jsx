@@ -33,8 +33,17 @@ export default function ExportEstimateModal({
     return `$${num.toFixed(2)}`;
   };
 
+  // Validate email format
+  const isValidEmail = (email) => {
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    return email && emailRegex.test(email.trim());
+  };
+
   const handleConfirm = () => {
-    onConfirm(email || null);
+    if (!isValidEmail(email)) {
+      return; // Button should be disabled anyway
+    }
+    onConfirm(email.trim());
   };
 
   return (
@@ -236,13 +245,14 @@ export default function ExportEstimateModal({
             </Panel>
           </Collapse>
 
-          {/* Email Notification */}
+          {/* Email Notification - Required */}
           <div className="bg-gray-50 rounded-lg p-4 border border-gray-200">
             <label className="block text-sm font-medium text-gray-700 mb-2 flex items-center gap-2">
               <svg className="w-4 h-4 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
               </svg>
-              Notification Email (optional)
+              Email Address
+              <span className="text-red-500">*</span>
             </label>
             <Input
               type="email"
@@ -251,14 +261,20 @@ export default function ExportEstimateModal({
               onChange={(e) => setEmail(e.target.value)}
               size="large"
               className="rounded-lg"
+              status={email && !isValidEmail(email) ? 'error' : ''}
               style={{
                 backgroundColor: 'white',
-                borderColor: '#d1d5db',
+                borderColor: email && !isValidEmail(email) ? '#ef4444' : '#d1d5db',
                 fontSize: '14px'
               }}
             />
+            {email && !isValidEmail(email) && (
+              <p className="text-xs text-red-500 mt-1">
+                Please enter a valid email address
+              </p>
+            )}
             <p className="text-xs text-gray-500 mt-2">
-              We'll send you the download link when your export is ready.
+              We'll send you the download link when your export is ready. Download links expire after 1 week.
             </p>
           </div>
 
@@ -285,7 +301,8 @@ export default function ExportEstimateModal({
               type="primary"
               onClick={handleConfirm}
               loading={loading}
-              className="flex-1 h-11 bg-green-600 hover:bg-green-700 border-green-600 hover:border-green-700"
+              disabled={!isValidEmail(email)}
+              className="flex-1 h-11 bg-green-600 hover:bg-green-700 border-green-600 hover:border-green-700 disabled:bg-gray-400 disabled:border-gray-400"
               icon={
                 <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z" />

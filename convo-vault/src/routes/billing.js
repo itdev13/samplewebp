@@ -25,8 +25,8 @@ const LAMBDA_FUNCTION_NAME = process.env.EXPORT_LAMBDA_FUNCTION_NAME || 'convo-v
  * Billing Routes - Handle export pricing, charges, and job management
  */
 
-// Maximum date range for exports (1 year in milliseconds)
-const MAX_DATE_RANGE_MS = 365 * 24 * 60 * 60 * 1000;
+// Maximum date range for exports (1 month in milliseconds)
+const MAX_DATE_RANGE_MS = 31 * 24 * 60 * 60 * 1000;
 
 /**
  * Validate date range doesn't exceed 1 year
@@ -42,7 +42,7 @@ function validateDateRange(startDate, endDate) {
   }
 
   if (end - start > MAX_DATE_RANGE_MS) {
-    return { valid: false, error: 'Date range cannot exceed 1 year' };
+    return { valid: false, error: 'Date range cannot exceed 1 month' };
   }
 
   if (end < start) {
@@ -187,6 +187,23 @@ router.post('/charge-and-export', authenticateSession, async (req, res) => {
       return res.status(400).json({
         success: false,
         error: 'exportType must be "conversations" or "messages"'
+      });
+    }
+
+    // Validate email is provided (required for notification)
+    if (!notificationEmail || !notificationEmail.trim()) {
+      return res.status(400).json({
+        success: false,
+        error: 'Email address is required for export notification'
+      });
+    }
+
+    // Basic email format validation
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(notificationEmail.trim())) {
+      return res.status(400).json({
+        success: false,
+        error: 'Please provide a valid email address'
       });
     }
 
@@ -534,7 +551,7 @@ router.get('/pricing', async (req, res) => {
     data: {
       unitPrices: billingService.getUnitPrices(),
       discountTiers: billingService.getDiscountTiers(),
-      maxDateRange: '1 year'
+      maxDateRange: '1 month'
     }
   });
 });
