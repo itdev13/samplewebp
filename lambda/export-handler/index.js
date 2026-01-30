@@ -1,7 +1,6 @@
 const AWS = require('aws-sdk');
 const axios = require('axios');
 const { MongoClient, ObjectId } = require('mongodb');
-const nodemailer = require('nodemailer');
 
 // Initialize AWS services
 const s3 = new AWS.S3();
@@ -15,12 +14,11 @@ const GHL_OAUTH_URL = process.env.GHL_OAUTH_URL || 'https://services.leadconnect
 const GHL_CLIENT_ID = process.env.GHL_CLIENT_ID;
 const GHL_CLIENT_SECRET = process.env.GHL_CLIENT_SECRET;
 
-// Email configuration
-const SMTP_HOST = process.env.SMTP_HOST;
-const SMTP_PORT = process.env.SMTP_PORT || 587;
-const SMTP_USER = process.env.SMTP_USER;
-const SMTP_PASS = process.env.SMTP_PASS;
-const EMAIL_FROM = process.env.EMAIL_FROM || 'noreply@vaultsuite.store';
+// Brevo Email configuration
+const BREVO_API_KEY = process.env.BREVO_API_KEY;
+const BREVO_API_URL = 'https://api.brevo.com/v3/smtp/email';
+const EMAIL_FROM_NAME = 'VaultSuite';
+const EMAIL_FROM_ADDRESS = 'support@vaultsuite.store';
 
 // Batch processing configuration
 const BATCH_SIZE = 10000;           // Records per Lambda invocation
@@ -240,30 +238,23 @@ async function updateJob(db, jobId, updates) {
 }
 
 /**
- * Send email notification with download link
+ * Send email notification with download link using Brevo API
  */
 async function sendEmail(email, downloadUrl, jobDetails) {
-  if (!SMTP_HOST || !SMTP_USER) {
-    console.log('SMTP not configured, skipping email notification');
+  if (!BREVO_API_KEY) {
+    console.log('BREVO_API_KEY not configured, skipping email notification');
     return false;
   }
 
   try {
-    const transporter = nodemailer.createTransport({
-      host: SMTP_HOST,
-      port: parseInt(SMTP_PORT),
-      secure: SMTP_PORT === '465',
-      auth: {
-        user: SMTP_USER,
-        pass: SMTP_PASS
-      }
-    });
-
-    const mailOptions = {
-      from: EMAIL_FROM,
-      to: email,
-      subject: 'Your ConvoVault Export is Ready',
-      html: `
+    const emailData = {
+      sender: {
+        name: EMAIL_FROM_NAME,
+        email: EMAIL_FROM_ADDRESS
+      },
+      to: [{ email: email }],
+      subject: 'Your VaultSuite Export is Ready',
+      htmlContent: `
         <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
           <h2 style="color: #10B981;">Your Export is Ready!</h2>
           <p>Your ${jobDetails.exportType} export has been completed successfully.</p>
@@ -292,17 +283,24 @@ async function sendEmail(email, downloadUrl, jobDetails) {
           <hr style="border: none; border-top: 1px solid #E5E7EB; margin: 30px 0;">
 
           <p style="color: #9CA3AF; font-size: 12px;">
-            This email was sent by ConvoVault. If you didn't request this export, please ignore this email.
+            This email was sent by VaultSuite. If you didn't request this export, please ignore this email.
           </p>
         </div>
       `
     };
 
-    await transporter.sendMail(mailOptions);
-    console.log('Email sent successfully to:', email);
+    const response = await axios.post(BREVO_API_URL, emailData, {
+      headers: {
+        'accept': 'application/json',
+        'api-key': BREVO_API_KEY,
+        'content-type': 'application/json'
+      }
+    });
+
+    console.log('Email sent successfully to:', email, 'MessageId:', response.data?.messageId);
     return true;
   } catch (error) {
-    console.error('Failed to send email:', error.message);
+    console.error('Failed to send email:', error.response?.data || error.message);
     return false;
   }
 }
