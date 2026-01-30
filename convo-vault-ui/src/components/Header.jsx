@@ -133,22 +133,6 @@ export default function Header() {
               )}
             </div>
             
-            {/* API Docs Button with Tooltip */}
-            <div className="relative">
-              <button
-                onClick={openApiDocs}
-                onMouseEnter={() => setShowApiTooltip(true)}
-                onMouseLeave={() => setShowApiTooltip(false)}
-                className="group bg-white/10 backdrop-blur-sm hover:bg-white/20 rounded-lg px-4 py-2 border border-white/20 transition-all flex items-center gap-2"
-              >
-                <span className="text-lg">📚</span>
-                <span className="text-white font-semibold text-sm hidden sm:inline">API Docs</span>
-                <svg className="w-4 h-4 text-white/70 group-hover:text-white transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                </svg>
-              </button>
-            </div>
-
             {/* Sub-Account Name */}
             <div className="bg-white/10 backdrop-blur-sm rounded-lg px-6 py-3 border border-white/20 flex items-baseline gap-2">
               <div className="text-lg text-blue-100 font-medium mb-1">Account -</div>

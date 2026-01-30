@@ -79,7 +79,8 @@ router.get('/messages', authenticateSession, async (req, res) => {
       success: true,
       message: 'Messages exported successfully',
       data: {
-        total: messages.length,
+        total: result.total || messages.length,  // Use API total if available
+        loaded: messages.length,
         messages: messages.map(msg => ({
           id: msg.id,
           conversationId: msg.conversationId,  // ← Important for context!

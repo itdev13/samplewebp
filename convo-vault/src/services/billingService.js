@@ -174,7 +174,7 @@ class BillingService {
       discountPercent,
       discountAmount,
       finalAmount,
-      finalAmountDollars: (finalAmount / 100).toFixed(2)
+      finalAmountDollars: (finalAmount).toFixed(2)
     };
   }
 

@@ -81,6 +81,8 @@ export default function MessagesTab() {
   }, [appliedFilters]);
 
   const messages = data?.data?.messages || [];
+  const totalMessages = data?.data?.total || messages.length;
+  const loadedMessages = data?.data?.loaded || messages.length;
   const hasMore = data?.data?.pagination?.hasMore || false;
   const nextCursorValue = data?.data?.pagination?.nextCursor;
 
@@ -240,10 +242,16 @@ export default function MessagesTab() {
         </div>
         <div className="flex items-center gap-3">
           {data?.data && (
-            <div className="bg-blue-50 px-4 py-2 rounded-lg">
-              <div className="text-2xl font-bold text-blue-600">{messages.length}</div>
-              <div className="text-xs text-blue-600 font-medium">Messages Loaded</div>
-            </div>
+            <>
+              <div className="bg-green-50 px-4 py-2 rounded-lg">
+                <div className="text-2xl font-bold text-green-600">{totalMessages.toLocaleString()}</div>
+                <div className="text-xs text-green-600 font-medium">Total Messages</div>
+              </div>
+              <div className="bg-blue-50 px-4 py-2 rounded-lg">
+                <div className="text-2xl font-bold text-blue-600">{loadedMessages.toLocaleString()}</div>
+                <div className="text-xs text-blue-600 font-medium">Loaded</div>
+              </div>
+            </>
           )}
           <div className="flex items-center gap-2">
           <Button
@@ -449,7 +457,7 @@ export default function MessagesTab() {
       {/* Pagination Controls */}
       {!isLoading && !error && messages.length > 0 && (
         <div className="flex items-center justify-between bg-white border-1 border-solid border-gray-200 rounded-xl p-4">
-          <span className="text-sm text-gray-600">Showing {messages.length} messages</span>
+          <span className="text-sm text-gray-600">Showing {loadedMessages.toLocaleString()} of {totalMessages.toLocaleString()} messages</span>
           <div className="flex gap-2">
             <Button onClick={() => setCursor(null)} disabled={!cursor} size="large">
               First Page
@@ -610,8 +618,8 @@ export default function MessagesTab() {
       {messages.length > 0 && (
         <div className="bg-gray-50 border-1 border-solid border-gray-200 rounded-xl p-4">
           <div className="text-sm text-gray-600">
-            💬 {messages.length} messages displayed • 
-            {messages.filter(m => m.direction === 'inbound').length} received • 
+            💬 Showing {loadedMessages.toLocaleString()} of {totalMessages.toLocaleString()} messages •
+            {messages.filter(m => m.direction === 'inbound').length} received •
             {messages.filter(m => m.direction === 'outbound').length} sent
             {hasMore && <span className="ml-4 text-blue-600 font-medium">• More pages available</span>}
           </div>
