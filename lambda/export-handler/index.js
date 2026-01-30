@@ -23,10 +23,10 @@ const SMTP_PASS = process.env.SMTP_PASS;
 const EMAIL_FROM = process.env.EMAIL_FROM || 'noreply@vaultsuite.store';
 
 // Batch processing configuration
-const BATCH_SIZE = 10;           // Records per Lambda invocation
+const BATCH_SIZE = 10000;           // Records per Lambda invocation
 const API_PAGE_SIZE = 100;          // Records per GHL API call
-const API_MESSAGES_PAGE_SIZE = 10;
-const TIMEOUT_BUFFER_MS = 14 * 60 * 1000;  // 2 min buffer before timeout
+const API_MESSAGES_PAGE_SIZE = 500;
+const TIMEOUT_BUFFER_MS = 14 * 60 * 1000;  // 14 min buffer before timeout
 
 // MongoDB client (reused across warm invocations)
 let dbClient = null;
@@ -528,7 +528,7 @@ exports.handler = async (event, context) => {
       }
     }
 
-    log('Batch complete', { processedItems: job.processedItems,  batchRecords: records.length, cursor: cursor, records, hasMore: hasMoreData || !!cursor });
+    log('Batch complete', { processedItems: job.processedItems,  batchRecords: records.length, cursor: cursor, hasMore: hasMoreData || !!cursor });
 
     // Convert to format and upload as S3 part
     if (records.length > 0) {
