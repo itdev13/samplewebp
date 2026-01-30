@@ -48,13 +48,14 @@ export const billingAPI = {
   },
 
   /**
-   * Get export history for location
+   * Get export history for location with pagination
    * @param {string} locationId - Location ID
-   * @param {number} limit - Max number of jobs to return (default 20)
+   * @param {number} page - Page number (default 1)
+   * @param {number} limit - Max number of jobs per page (default 10)
    */
-  getExportHistory: async (locationId, limit = 20) => {
+  getExportHistory: async (locationId, page = 1, limit = 10) => {
     const response = await apiClient.get('/billing/export-history', {
-      params: { locationId, limit }
+      params: { locationId, page, limit }
     });
     return response;
   },

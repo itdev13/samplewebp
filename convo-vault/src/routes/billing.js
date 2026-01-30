@@ -494,11 +494,11 @@ router.get('/export-status/:jobId', authenticateSession, async (req, res) => {
 
 /**
  * @route GET /api/billing/export-history
- * @desc Get recent export jobs for location
+ * @desc Get recent export jobs for location with pagination
  */
 router.get('/export-history', authenticateSession, async (req, res) => {
   try {
-    const { locationId, limit } = req.query;
+    const { locationId, limit, page } = req.query;
 
     if (!locationId) {
       return res.status(400).json({
@@ -507,12 +507,27 @@ router.get('/export-history', authenticateSession, async (req, res) => {
       });
     }
 
-    const jobs = await ExportJob.getRecentJobs(locationId, parseInt(limit) || 20);
+    const pageNum = parseInt(page) || 1;
+    const limitNum = parseInt(limit) || 10;
+    const skip = (pageNum - 1) * limitNum;
+
+    // Get total count for pagination
+    const totalCount = await ExportJob.countDocuments({ locationId });
+
+    // Get paginated jobs
+    const jobs = await ExportJob.find({ locationId })
+      .sort({ createdAt: -1 })
+      .skip(skip)
+      .limit(limitNum)
+      .populate('billingTransactionId');
 
     res.json({
       success: true,
       data: {
-        total: jobs.length,
+        total: totalCount,
+        page: pageNum,
+        limit: limitNum,
+        totalPages: Math.ceil(totalCount / limitNum),
         jobs: jobs.map(job => ({
           jobId: job._id,
           exportType: job.exportType,
@@ -524,6 +539,8 @@ router.get('/export-history', authenticateSession, async (req, res) => {
           downloadUrlExpiresAt: job.downloadUrlExpiresAt,
           createdAt: job.createdAt,
           completedAt: job.completedAt,
+          filters: job.filters || {},
+          errorMessage: job.errorMessage,
           billing: job.billingTransactionId ? {
             amount: (job.billingTransactionId.pricing.finalAmount / 100).toFixed(2)
           } : null
