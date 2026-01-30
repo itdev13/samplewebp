@@ -53,7 +53,7 @@ class BillingService {
 
     try {
       const response = await axios.get(
-        `${this.baseURL}/marketplace/billing/charges/rebilling-config/${APP_ID}/location/${locationId}`,
+        `${this.baseURL}/marketplace/app/${APP_ID}/rebilling-config/location/${locationId}`,
         {
           headers: {
             'Authorization': `Bearer ${accessToken}`,
@@ -63,20 +63,19 @@ class BillingService {
         }
       );
 
-      const config = response.data;
+      const config = response.data?.plans;
       logger.info('Fetched rebilling config:', config);
 
       // Extract prices from meters
       const prices = { ...DEFAULT_UNIT_PRICES };
-
-      if (config.meters && Array.isArray(config.meters)) {
-        config.meters.forEach(meter => {
-          if (meter.meterId === METER_IDS.conversations) {
-            prices.conversations = meter.centsPrice || DEFAULT_UNIT_PRICES.conversations;
-          } else if (meter.meterId === METER_IDS.smsWhatsapp) {
-            prices.smsWhatsapp = meter.centsPrice || DEFAULT_UNIT_PRICES.smsWhatsapp;
-          } else if (meter.meterId === METER_IDS.email) {
-            prices.email = meter.centsPrice || DEFAULT_UNIT_PRICES.email;
+      if (config.subscription && Array.isArray(config.subscription)) {
+        config.subscriptions.forEach(meter => {
+          if (meter.planId === METER_IDS.conversations) {
+            prices.conversations = meter.baseAmount || DEFAULT_UNIT_PRICES.conversations;
+          } else if (meter.planId === METER_IDS.smsWhatsapp) {
+            prices.smsWhatsapp = meter.baseAmount || DEFAULT_UNIT_PRICES.smsWhatsapp;
+          } else if (meter.planId === METER_IDS.email) {
+            prices.email = meter.baseAmount || DEFAULT_UNIT_PRICES.email;
           }
         });
       }

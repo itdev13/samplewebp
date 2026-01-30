@@ -7,11 +7,11 @@ export const billingAPI = {
    * @param {string} exportType - 'conversations' or 'messages'
    * @param {Object} filters - Export filters { channel, startDate, endDate, contactId }
    */
-  getEstimate: async (locationId, exportType, filters = {}) => {
+  getEstimate: async (locationId, exportType, exportFilters = {}) => {
     const response = await apiClient.post('/billing/estimate', {
       locationId,
       exportType,
-      filters
+      filters:exportFilters
     });
     return response;
   },
