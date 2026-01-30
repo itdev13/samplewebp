@@ -26,11 +26,9 @@ export default function ExportEstimateModal({
     return num?.toLocaleString() || '0';
   };
 
-  // Format unit price as cents for display
+  // Format unit price for display (price is in dollars, e.g., 0.05 = $0.05)
   const formatUnitPrice = (price) => {
-    const cents = price * 100;
-    if (cents === 1) return '1 cent';
-    return `${cents} cents`;
+    return `$${price.toFixed(2)}`;
   };
 
   const handleConfirm = () => {
@@ -91,30 +89,39 @@ export default function ExportEstimateModal({
             <div className="space-y-2 text-sm">
               {/* Conversations */}
               {estimate.breakdown?.conversations?.count > 0 && (
-                <div className="flex justify-between items-center py-1">
-                  <span className="text-gray-600">Conversations</span>
-                  <span className="font-medium">
-                    {formatNumber(estimate.breakdown.conversations.count)} @ {formatUnitPrice(estimate.breakdown.conversations.unitPrice)} each = {formatCurrency(estimate.breakdown.conversations.subtotal)}
+                <div className="flex justify-between items-center py-2 border-b border-gray-100">
+                  <div>
+                    <span className="text-gray-700 font-medium">Conversations</span>
+                    <div className="text-xs text-gray-500">{formatUnitPrice(estimate.breakdown.conversations.unitPrice)}/conversation</div>
+                  </div>
+                  <span className="font-medium text-gray-800">
+                    {formatNumber(estimate.breakdown.conversations.count)} × {formatUnitPrice(estimate.breakdown.conversations.unitPrice)} = {formatCurrency(estimate.breakdown.conversations.subtotal)}
                   </span>
                 </div>
               )}
 
               {/* Text Messages (SMS, WhatsApp, etc.) */}
               {estimate.breakdown?.smsWhatsapp?.count > 0 && (
-                <div className="flex justify-between items-center py-1">
-                  <span className="text-gray-600">Text Messages</span>
-                  <span className="font-medium">
-                    {formatNumber(estimate.breakdown.smsWhatsapp.count)} @ {formatUnitPrice(estimate.breakdown.smsWhatsapp.unitPrice)} each = {formatCurrency(estimate.breakdown.smsWhatsapp.subtotal)}
+                <div className="flex justify-between items-center py-2 border-b border-gray-100">
+                  <div>
+                    <span className="text-gray-700 font-medium">Text Messages</span>
+                    <div className="text-xs text-gray-500">{formatUnitPrice(estimate.breakdown.smsWhatsapp.unitPrice)}/message</div>
+                  </div>
+                  <span className="font-medium text-gray-800">
+                    {formatNumber(estimate.breakdown.smsWhatsapp.count)} × {formatUnitPrice(estimate.breakdown.smsWhatsapp.unitPrice)} = {formatCurrency(estimate.breakdown.smsWhatsapp.subtotal)}
                   </span>
                 </div>
               )}
 
               {/* Email Messages */}
               {estimate.breakdown?.email?.count > 0 && (
-                <div className="flex justify-between items-center py-1">
-                  <span className="text-gray-600">Email Messages</span>
-                  <span className="font-medium">
-                    {formatNumber(estimate.breakdown.email.count)} @ {formatUnitPrice(estimate.breakdown.email.unitPrice)} each = {formatCurrency(estimate.breakdown.email.subtotal)}
+                <div className="flex justify-between items-center py-2 border-b border-gray-100">
+                  <div>
+                    <span className="text-gray-700 font-medium">Email Messages</span>
+                    <div className="text-xs text-gray-500">{formatUnitPrice(estimate.breakdown.email.unitPrice)}/email</div>
+                  </div>
+                  <span className="font-medium text-gray-800">
+                    {formatNumber(estimate.breakdown.email.count)} × {formatUnitPrice(estimate.breakdown.email.unitPrice)} = {formatCurrency(estimate.breakdown.email.subtotal)}
                   </span>
                 </div>
               )}
