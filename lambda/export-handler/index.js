@@ -303,12 +303,41 @@ async function sendEmail(email, downloadUrl, jobDetails) {
 }
 
 /**
+ * Extract exportJobId from event (handles both normal and durable execution formats)
+ */
+function extractExportJobId(event) {
+  // Direct invocation format
+  if (event.exportJobId) {
+    return event.exportJobId;
+  }
+
+  // Durable execution format - payload is nested
+  if (event.InitialExecutionState?.Operations?.[0]?.ExecutionDetails?.InputPayload) {
+    try {
+      const payload = JSON.parse(event.InitialExecutionState.Operations[0].ExecutionDetails.InputPayload);
+      return payload.exportJobId;
+    } catch (e) {
+      console.error('Failed to parse durable execution payload:', e.message);
+    }
+  }
+
+  return undefined;
+}
+
+/**
  * Main Lambda handler with batch processing
  */
 exports.handler = async (event, context) => {
   console.log('Lambda invoked with event:', JSON.stringify(event, null, 2));
 
-  const { exportJobId } = event;
+  const exportJobId = extractExportJobId(event);
+  console.log('Extracted exportJobId:', exportJobId);
+
+  if (!exportJobId) {
+    console.error('No exportJobId found in event');
+    return { statusCode: 400, body: JSON.stringify({ error: 'Missing exportJobId' }) };
+  }
+
   const db = await getDb();
 
   // Load job from database
