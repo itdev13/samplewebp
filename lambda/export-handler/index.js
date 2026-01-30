@@ -23,8 +23,9 @@ const SMTP_PASS = process.env.SMTP_PASS;
 const EMAIL_FROM = process.env.EMAIL_FROM || 'noreply@vaultsuite.store';
 
 // Batch processing configuration
-const BATCH_SIZE = 10000;           // Records per Lambda invocation
+const BATCH_SIZE = 10;           // Records per Lambda invocation
 const API_PAGE_SIZE = 100;          // Records per GHL API call
+const API_MESSAGES_PAGE_SIZE = 10;
 const TIMEOUT_BUFFER_MS = 14 * 60 * 1000;  // 2 min buffer before timeout
 
 // MongoDB client (reused across warm invocations)
@@ -107,7 +108,7 @@ async function fetchConversationsPage(locationId, accessToken, filters, skip) {
 async function fetchMessagesPage(locationId, accessToken, filters, cursor) {
   const params = {
     locationId,
-    limit: API_PAGE_SIZE,
+    limit: API_MESSAGES_PAGE_SIZE,
     ...filters
   };
 
@@ -494,8 +495,9 @@ exports.handler = async (event, context) => {
 
       console.log(`Fetched page: ${pageResult.data.length} records. Total this batch: ${recordsFetched}`);
 
-      // No more data available
-      if (pageResult.data.length < API_PAGE_SIZE) {
+      // No more data available - use correct page size for each type
+      const pageSize = job.exportType === 'conversations' ? API_PAGE_SIZE : API_MESSAGES_PAGE_SIZE;
+      if (pageResult.data.length < pageSize) {
         hasMoreData = false;
         cursor = null;
       }
