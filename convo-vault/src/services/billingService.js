@@ -255,7 +255,8 @@ class BillingService {
             units: charge.qty,
             appId: process.env.GHL_APP_ID || "694f93f8a6babf0c821b1356",
             eventId: transactionId,
-            locationId: locationId
+            locationId: locationId,
+            discription: "Exported Data " + "_" + new Date().toDateString() 
           },
           {
             headers: {
