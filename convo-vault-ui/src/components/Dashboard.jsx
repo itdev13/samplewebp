@@ -25,8 +25,9 @@ export default function Dashboard() {
 
   const tabs = [
     { id: 'conversations', label: 'Conversations', icon: '💬' },
-    { id: 'messages', label: 'Messages & Export', icon: '📊' },
-    { id: 'import', label: 'Import', icon: '📥' },
+    { id: 'messages', label: 'Messages', icon: '📊' },
+    { id: 'export', label: 'Export', icon: '📤' },
+    // { id: 'import', label: 'Import', icon: '📥' },
     { id: 'support', label: 'Support', icon: '🆘' }
   ];
 
@@ -102,6 +103,7 @@ export default function Dashboard() {
                 <ConversationsTab onSelectConversation={handleConversationSelect} />
               )}
               {activeTab === 'messages' && <MessagesTab />}
+              {activeTab === 'export' && <ExportTab />}
               {activeTab === 'import' && <ImportTab />}
               {activeTab === 'support' && <SupportTab />}
             </>
