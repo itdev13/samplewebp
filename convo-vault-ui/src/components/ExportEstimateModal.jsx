@@ -13,11 +13,12 @@ export default function ExportEstimateModal({
   error = null,
   exportType = 'messages'
 }) {
+  console.log("estimates: ", estimate);
   const [email, setEmail] = useState('');
 
   // Format cents to dollars
   const formatCurrency = (cents) => {
-    return `$${(cents / 100).toFixed(2)}`;
+    return `$${(cents).toFixed(2)}`;
   };
 
   // Format large numbers
