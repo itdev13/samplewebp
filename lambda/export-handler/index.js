@@ -528,7 +528,7 @@ exports.handler = async (event, context) => {
       }
     }
 
-    log('Batch complete', { processedItems: job.processedItems,  batchRecords: records.length, hasMore: hasMoreData || !!cursor });
+    log('Batch complete', { processedItems: job.processedItems,  batchRecords: records.length, cursor: cursor, records, hasMore: hasMoreData || !!cursor });
 
     // Convert to format and upload as S3 part
     if (records.length > 0) {
