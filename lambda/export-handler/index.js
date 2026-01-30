@@ -513,6 +513,11 @@ exports.handler = async (event, context) => {
     let parts = job.s3Upload?.parts || [];
     const s3Key = job.s3Upload?.key || `exports/${job.companyId}/${job.locationId}/${exportJobId}.${job.format}`;
 
+    // Generate filename based on export type and channel filter
+    const channelFilter = job.filters?.channel || '';
+    const channelPrefix = channelFilter ? `${channelFilter.toLowerCase()}_` : '';
+    const exportFilename = `${channelPrefix}${job.exportType}_export.${job.format}`;
+
     if (!uploadId) {
       // Start new multipart upload
       log('Starting S3 multipart upload...');
@@ -520,7 +525,7 @@ exports.handler = async (event, context) => {
         Bucket: S3_BUCKET,
         Key: s3Key,
         ContentType: job.format === 'json' ? 'application/json' : 'text/csv',
-        ContentDisposition: `attachment; filename="${job.exportType}_export.${job.format}"`
+        ContentDisposition: `attachment; filename="${exportFilename}"`
       }).promise();
 
       uploadId = multipart.UploadId;
@@ -663,7 +668,7 @@ exports.handler = async (event, context) => {
           Key: s3Key,
           Body: content,
           ContentType: job.format === 'json' ? 'application/json' : 'text/csv',
-          ContentDisposition: `attachment; filename="${job.exportType}_export.${job.format}"`
+          ContentDisposition: `attachment; filename="${exportFilename}"`
         }).promise();
 
         log('File uploaded with putObject');
