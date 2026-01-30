@@ -276,7 +276,7 @@ export default function ExportEstimateModal({
                 </svg>
               }
             >
-              {loading ? 'Processing...' : `Pay ${formatCurrency(estimate.finalAmount)} & Export`}
+              {loading ? 'Processing...' : `Export`}
             </Button>
           </div>
         </div>
