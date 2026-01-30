@@ -86,17 +86,17 @@ export default function ExportEstimateModal({
                 <div className="flex justify-between items-center py-1">
                   <span className="text-gray-600">Conversations</span>
                   <span className="font-medium">
-                    {formatNumber(estimate.breakdown.conversations.count)} x 1¢ = {formatCurrency(estimate.breakdown.conversations.subtotal)}
+                    {formatNumber(estimate.breakdown.conversations.count)} @ 1 cent each = {formatCurrency(estimate.breakdown.conversations.subtotal)}
                   </span>
                 </div>
               )}
 
-              {/* SMS/WhatsApp Messages */}
+              {/* Text Messages (SMS, WhatsApp, etc.) */}
               {estimate.breakdown?.smsWhatsapp?.count > 0 && (
                 <div className="flex justify-between items-center py-1">
-                  <span className="text-gray-600">SMS/WhatsApp Messages</span>
+                  <span className="text-gray-600">Text Messages</span>
                   <span className="font-medium">
-                    {formatNumber(estimate.breakdown.smsWhatsapp.count)} x 1¢ = {formatCurrency(estimate.breakdown.smsWhatsapp.subtotal)}
+                    {formatNumber(estimate.breakdown.smsWhatsapp.count)} @ 1 cent each = {formatCurrency(estimate.breakdown.smsWhatsapp.subtotal)}
                   </span>
                 </div>
               )}
@@ -106,7 +106,7 @@ export default function ExportEstimateModal({
                 <div className="flex justify-between items-center py-1">
                   <span className="text-gray-600">Email Messages</span>
                   <span className="font-medium">
-                    {formatNumber(estimate.breakdown.email.count)} x 3¢ = {formatCurrency(estimate.breakdown.email.subtotal)}
+                    {formatNumber(estimate.breakdown.email.count)} @ 3 cents each = {formatCurrency(estimate.breakdown.email.subtotal)}
                   </span>
                 </div>
               )}

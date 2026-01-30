@@ -1,11 +1,13 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { useAuth } from '../../context/AuthContext';
 import { exportAPI } from '../../api/export';
+import { billingAPI } from '../../api/billing';
 import { Button, Select, DatePicker, Input, Tooltip, message as antMessage } from 'antd';
 import { useErrorModal } from '../ErrorModal';
 import { useInfoModal } from '../InfoModal';
-import ExportModal from '../ExportModal';
+import ExportEstimateModal from '../ExportEstimateModal';
+import ExportProgress from '../ExportProgress';
 import { getMessageTypeDisplay, getMessageTypeIcon } from '../../utils/messageTypes';
 import { copyToClipboard } from '../../utils/clipboard';
 import dayjs from 'dayjs';
@@ -25,6 +27,11 @@ export default function MessagesTab() {
   const [shouldFetch, setShouldFetch] = useState(true); // Trigger for initial load
   const [searchTimestamp, setSearchTimestamp] = useState(Date.now()); // Force refetch even with same filters
   const [exportModalVisible, setExportModalVisible] = useState(false);
+  const [estimating, setEstimating] = useState(false);
+  const [estimate, setEstimate] = useState(null);
+  const [estimateError, setEstimateError] = useState(null);
+  const [processing, setProcessing] = useState(false);
+  const [activeJob, setActiveJob] = useState(null);
   const { showError, ErrorModalComponent } = useErrorModal();
   const { showInfo, InfoModalComponent } = useInfoModal();
 
@@ -76,7 +83,6 @@ export default function MessagesTab() {
   const messages = data?.data?.messages || [];
   const hasMore = data?.data?.pagination?.hasMore || false;
   const nextCursorValue = data?.data?.pagination?.nextCursor;
-  const [downloading, setDownloading] = useState(false);
 
   // Helper to safely format dates
   const formatDate = (dateValue) => {
@@ -106,151 +112,130 @@ export default function MessagesTab() {
     error.message?.includes('Internal server error')
   );
 
-  // Download messages with date range - NO HARD LIMITS, with chunking
-  const handleExport = async (dateRange) => {
+  // Poll active job status
+  useEffect(() => {
+    if (!activeJob || !['pending', 'processing'].includes(activeJob.status)) return;
+
+    const pollInterval = setInterval(async () => {
+      try {
+        const response = await billingAPI.getExportStatus(activeJob.jobId, location?.id);
+        if (response.success) {
+          setActiveJob(response.data);
+          // Stop polling if completed or failed
+          if (['completed', 'failed'].includes(response.data.status)) {
+            if (response.data.status === 'completed') {
+              antMessage.success('Export completed! Click Download to get your file.');
+            }
+          }
+        }
+      } catch (err) {
+        console.error('Failed to poll job status:', err);
+      }
+    }, 3000);
+
+    return () => clearInterval(pollInterval);
+  }, [activeJob?.jobId, activeJob?.status, location?.id]);
+
+  // Handle get estimate - opens modal and fetches estimate
+  const handleGetEstimate = async () => {
+    setExportModalVisible(true);
+    setEstimating(true);
+    setEstimate(null);
+    setEstimateError(null);
+
     try {
-      setDownloading(true);
-      setExportModalVisible(false);
-      
-      const { startDate, endDate } = dateRange;
-      
-      // Convert date strings to millisecond timestamps for API (start of day to end of day)
-      const startDateTimestamp = dayjs(startDate).startOf('day').valueOf(); // Returns milliseconds
-      const endDateTimestamp = dayjs(endDate).endOf('day').valueOf(); // Returns milliseconds
-      
-      const exportLimit = 500; // Batch size for API calls
-      const chunkSize = 50000; // Messages per CSV file (chunk)
-      
-      let allMessages = [];
-      let cursor = null;
-      let hasMore = true;
-      let totalFetched = 0;
-      let chunkNumber = 1;
-      const downloadedChunks = []; // Track chunk sizes
-      
-      // Calculate total chunks needed (estimate) for better naming
-      let estimatedTotalChunks = 1;
-      
-      // Fetch ALL messages (no batch limit)
-      while (hasMore) {
-        const response = await exportAPI.exportMessages(location.id, {
-          channel: filters.channel || undefined,
-          startDate: startDateTimestamp,
-          endDate: endDateTimestamp,
-          contactId: filters.contactId || undefined,
-          conversationId: filters.conversationId || undefined,
-          limit: exportLimit,
-          cursor: cursor || undefined
-        });
-        
-        const batch = response.data.messages || [];
-        allMessages = [...allMessages, ...batch];
-        totalFetched += batch.length;
-        
-        // Check for next cursor
-        cursor = response.data.pagination?.nextCursor;
-        hasMore = !!cursor && batch.length === exportLimit;
-        
-        // Estimate total chunks (update as we fetch more)
-        estimatedTotalChunks = Math.ceil(totalFetched / chunkSize);
-        
-        // If we've accumulated enough for a chunk, save it
-        if (allMessages.length >= chunkSize) {
-          const chunk = allMessages.splice(0, chunkSize);
-          const totalChunks = estimatedTotalChunks + (allMessages.length > 0 ? 1 : 0);
-          await downloadMessageChunk(chunk, chunkNumber, totalChunks, startDate, endDate, filters.channel);
-          downloadedChunks.push({ number: chunkNumber, size: chunk.length });
-          chunkNumber++;
-        }
-        
-        // Download remaining messages when no more data
-        if (!hasMore && allMessages.length > 0) {
-          const totalChunks = chunkNumber;
-          await downloadMessageChunk(allMessages, chunkNumber, totalChunks, startDate, endDate, filters.channel);
-          downloadedChunks.push({ number: chunkNumber, size: allMessages.length });
-          allMessages = []; // Clear after download
-        }
-        
-        // Small delay between requests to respect rate limits
-        if (hasMore) {
-          await new Promise(resolve => setTimeout(resolve, 300));
-        }
-      }
-      
-      // Show success message with chunk info
-      if (downloadedChunks.length > 1) {
-        showInfo(
-          'Export Complete!',
-          `Exported ${totalFetched.toLocaleString()} messages in ${downloadedChunks.length} files:`,
-          downloadedChunks.map((chunk, i) => ({
-            icon: `${i + 1}️⃣`,
-            title: getMessageChunkFileName(chunk.number, downloadedChunks.length, startDate, endDate, filters.channel),
-            items: [`${chunk.size.toLocaleString()} messages`]
-          }))
-        );
-      } else if (downloadedChunks.length === 1) {
-        antMessage.success(`Successfully exported ${totalFetched.toLocaleString()} messages!`);
+      // Build filters for estimate - use current filter state
+      const exportFilters = {
+        channel: filters.channel || undefined,
+        startDate: filters.startDate ? dayjs(filters.startDate).startOf('day').valueOf() : undefined,
+        endDate: filters.endDate ? dayjs(filters.endDate).endOf('day').valueOf() : undefined,
+        contactId: filters.contactId || undefined
+      };
+
+      const response = await billingAPI.getEstimate(location.id, 'messages', exportFilters);
+      if (response.success) {
+        setEstimate(response.data.estimate);
       } else {
-        antMessage.info('No messages found in the selected date range.');
+        setEstimateError(response.error || 'Failed to calculate estimate');
       }
-      
     } catch (err) {
-      showError('Export Failed', 'Failed to export messages. Please try again.');
+      setEstimateError(err.message || 'Failed to calculate estimate');
     } finally {
-      setDownloading(false);
+      setEstimating(false);
     }
   };
 
-  // Generate descriptive chunk file name for messages
-  const getMessageChunkFileName = (chunkNumber, totalChunks, startDate, endDate, channel) => {
-    // startDate and endDate are already in YYYY-MM-DD format from ExportModal
-    const channelSuffix = channel ? `_${channel.toLowerCase()}` : '';
-    const chunkSuffix = totalChunks > 1 ? `_chunk_${String(chunkNumber).padStart(3, '0')}_of_${String(totalChunks).padStart(3, '0')}` : '';
-    return `messages${channelSuffix}_${startDate}_to_${endDate}${chunkSuffix}.csv`;
+  // Handle pay and export
+  const handlePayAndExport = async (notificationEmail) => {
+    setProcessing(true);
+    setEstimateError(null);
+
+    try {
+      const exportFilters = {
+        channel: filters.channel || undefined,
+        startDate: filters.startDate ? dayjs(filters.startDate).startOf('day').valueOf() : undefined,
+        endDate: filters.endDate ? dayjs(filters.endDate).endOf('day').valueOf() : undefined,
+        contactId: filters.contactId || undefined
+      };
+
+      const response = await billingAPI.chargeAndExport(
+        location.id,
+        'messages',
+        'csv',
+        exportFilters,
+        notificationEmail
+      );
+
+      if (response.success) {
+        setActiveJob({
+          jobId: response.data.jobId,
+          status: response.data.status,
+          totalItems: response.data.totalItems,
+          progress: { total: response.data.totalItems, processed: 0, percent: 0 }
+        });
+        setExportModalVisible(false);
+        setEstimate(null);
+        antMessage.success('Export started! We\'ll process it in the background.');
+      } else {
+        setEstimateError(response.error || 'Export failed');
+      }
+    } catch (err) {
+      setEstimateError(err.message || 'Export failed');
+    } finally {
+      setProcessing(false);
+    }
   };
 
-  // Download a single message chunk as CSV
-  const downloadMessageChunk = async (messages, chunkNumber, totalChunks, startDate, endDate, channel) => {
-    const csvHeaders = 'Message Date,Message ID,Conversation ID,Contact ID,Message Type,Direction,Status,Message Body,Attachments\n';
-    const csvRows = messages.map(msg => {
-      const formattedDate = formatDate(msg.dateAdded);
-      const message = (msg.body || '').replace(/"/g, '""').replace(/\n/g, ' ');
-      const attachments = msg.attachments && msg.attachments.length > 0 
-        ? msg.attachments.join('; ') 
-        : '';
-      return `"${formattedDate}","${msg.id || ''}","${msg.conversationId || ''}","${msg.contactId || ''}","${getMessageTypeDisplay(msg.type) || ''}","${msg.direction || ''}","${msg.status || ''}","${message}","${attachments}"`;
-    }).join('\n');
-    
-    const csv = csvHeaders + csvRows;
-    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
-    const url = window.URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = getMessageChunkFileName(chunkNumber, totalChunks, startDate, endDate, channel);
-    document.body.appendChild(a);
-    a.click();
-    window.URL.revokeObjectURL(url);
-    document.body.removeChild(a);
-    
-    // Small delay between downloads
-    await new Promise(resolve => setTimeout(resolve, 500));
+  // Handle modal close
+  const handleModalClose = () => {
+    if (!processing) {
+      setExportModalVisible(false);
+      setEstimate(null);
+      setEstimateError(null);
+    }
   };
 
   return (
     <div className="space-y-6">
       {ErrorModalComponent}
       {InfoModalComponent}
-      <ExportModal
+
+      {/* Export Estimate Modal */}
+      <ExportEstimateModal
         visible={exportModalVisible}
-        onCancel={() => setExportModalVisible(false)}
-        onExport={handleExport}
-        loading={downloading}
+        onCancel={handleModalClose}
+        onConfirm={handlePayAndExport}
+        loading={processing}
+        estimating={estimating}
+        estimate={estimate}
+        error={estimateError}
+        exportType="messages"
       />
-      
+
       {/* Header with Stats */}
       <div className="flex items-center justify-between">
         <div>
-          <h2 className="text-2xl font-bold text-gray-900">Messages & Export</h2>
+          <h2 className="text-2xl font-bold text-gray-900">Messages</h2>
           <p className="text-sm text-gray-500 mt-1">View, filter, and export all messages from this sub-account</p>
         </div>
         <div className="flex items-center gap-3">
@@ -262,24 +247,25 @@ export default function MessagesTab() {
           )}
           <div className="flex items-center gap-2">
           <Button
-            onClick={() => setExportModalVisible(true)}
-            loading={downloading}
+            onClick={handleGetEstimate}
+            disabled={activeJob && ['pending', 'processing'].includes(activeJob.status)}
             size="large"
             type="primary"
+            className="bg-green-600 hover:bg-green-700 border-green-600"
             icon={
               <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
               </svg>
             }
           >
-              {downloading ? 'Exporting...' : 'Export CSV'}
+              Export Messages
           </Button>
-            <Tooltip 
+            <Tooltip
               title={
                 <div style={{ fontSize: '13px', lineHeight: '1.6' }}>
-                  <strong>Need additional fields?</strong>
+                  <strong>Pay-per-use export</strong>
                   <br />
-                  Raise a request in the Support tab and we'll add them within 24 hours.
+                  1 cent per text message, 3 cents per email. Volume discounts up to 70%!
                 </div>
               }
               placement="left"
@@ -293,22 +279,17 @@ export default function MessagesTab() {
           </div>
         </div>
       </div>
-      
-      {/* Export Progress */}
-      {downloading && (
-        <div className="bg-blue-50 border-2 border-blue-200 rounded-xl p-4">
-          <div className="flex items-center gap-3">
-            <div className="animate-spin h-5 w-5 border-2 border-blue-600 border-t-transparent rounded-full"></div>
-            <div className="flex-1">
-              <span className="text-blue-700 font-medium block">
-                Exporting messages... This may take a moment for large datasets.
-              </span>
-              <span className="text-blue-600 text-sm block mt-1">
-                Large exports will be split into multiple CSV files (chunks of 50,000 messages each)
-              </span>
-            </div>
-          </div>
-        </div>
+
+      {/* Active Export Job Progress */}
+      {activeJob && (
+        <ExportProgress
+          job={activeJob}
+          onRefresh={() => {
+            billingAPI.getExportStatus(activeJob.jobId, location?.id)
+              .then(res => res.success && setActiveJob(res.data))
+              .catch(console.error);
+          }}
+        />
       )}
 
       {/* Filters Card */}

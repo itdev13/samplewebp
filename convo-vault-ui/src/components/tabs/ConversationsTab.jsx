@@ -2,15 +2,15 @@ import React, { useState, useEffect } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { useAuth } from '../../context/AuthContext';
 import { conversationsAPI } from '../../api/conversations';
+import { billingAPI } from '../../api/billing';
 import { DatePicker, Select, Button, Tooltip, message, Input } from 'antd';
 import { useErrorModal } from '../ErrorModal';
 import { useInfoModal } from '../InfoModal';
-import ExportModal from '../ExportModal';
+import ExportEstimateModal from '../ExportEstimateModal';
+import ExportProgress from '../ExportProgress';
 import { copyToClipboard } from '../../utils/clipboard';
 import dayjs from 'dayjs';
 import { getMessageTypeDisplay } from '../../utils/messageTypes';
-
-const { RangePicker } = DatePicker;
 
 export default function ConversationsTab({ onSelectConversation }) {
   const { location } = useAuth();
@@ -27,11 +27,15 @@ export default function ConversationsTab({ onSelectConversation }) {
     lastMessageAction: '',
     sortBy: 'last_message_date'
   });
-  const [downloading, setDownloading] = useState(false);
   const [appliedFilters, setAppliedFilters] = useState(filters); // Filters actually used for API
   const [shouldFetch, setShouldFetch] = useState(true); // Trigger for initial load
   const [searchTimestamp, setSearchTimestamp] = useState(Date.now()); // Force refetch even with same filters
   const [exportModalVisible, setExportModalVisible] = useState(false);
+  const [estimating, setEstimating] = useState(false);
+  const [estimate, setEstimate] = useState(null);
+  const [estimateError, setEstimateError] = useState(null);
+  const [processing, setProcessing] = useState(false);
+  const [activeJob, setActiveJob] = useState(null);
   const { showError, ErrorModalComponent } = useErrorModal();
   const { showInfo, InfoModalComponent } = useInfoModal();
 
@@ -89,150 +93,122 @@ export default function ConversationsTab({ onSelectConversation }) {
     }
   };
 
-  // Download conversations with date range - NO HARD LIMITS, with chunking
-  const handleExport = async (dateRange) => {
+  // Poll active job status
+  useEffect(() => {
+    if (!activeJob || !['pending', 'processing'].includes(activeJob.status)) return;
+
+    const pollInterval = setInterval(async () => {
+      try {
+        const response = await billingAPI.getExportStatus(activeJob.jobId, location?.id);
+        if (response.success) {
+          setActiveJob(response.data);
+          if (['completed', 'failed'].includes(response.data.status)) {
+            if (response.data.status === 'completed') {
+              message.success('Export completed! Click Download to get your file.');
+            }
+          }
+        }
+      } catch (err) {
+        console.error('Failed to poll job status:', err);
+      }
+    }, 3000);
+
+    return () => clearInterval(pollInterval);
+  }, [activeJob?.jobId, activeJob?.status, location?.id]);
+
+  // Handle get estimate - opens modal and fetches estimate
+  const handleGetEstimate = async () => {
+    setExportModalVisible(true);
+    setEstimating(true);
+    setEstimate(null);
+    setEstimateError(null);
+
     try {
-      setDownloading(true);
-      setExportModalVisible(false);
-      
-      const { startDate, endDate } = dateRange;
-      
-      // Convert date strings to millisecond timestamps for API (start of day to end of day)
-      const startDateTimestamp = dayjs(startDate).startOf('day').valueOf(); // Returns milliseconds
-      const endDateTimestamp = dayjs(endDate).endOf('day').valueOf(); // Returns milliseconds
-      
-      const exportLimit = 100; // Batch size for API calls
-      const chunkSize = 50000; // Conversations per CSV file (chunk)
-      
-      let allConversations = [];
-      let startAfterId = null;
-      let hasMore = true;
-      let totalFetched = 0;
-      let chunkNumber = 1;
-      const downloadedChunks = []; // Track chunk sizes
-      let estimatedTotalChunks = 1; // For better naming
-      
-      // Fetch ALL conversations (no batch limit)
-      while (hasMore) {
-        const response = await conversationsAPI.download(location.id, {
-          limit: exportLimit,
-          query: filters.query || undefined,
-          startDate: startDateTimestamp,
-          endDate: endDateTimestamp,
-          conversationId: filters.conversationId || undefined,
-          contactId: filters.contactId || undefined,
-          lastMessageType: filters.lastMessageType || undefined,
-          lastMessageDirection: filters.lastMessageDirection || undefined,
-          status: filters.status || undefined,
-          lastMessageAction: filters.lastMessageAction || undefined,
-          sortBy: filters.sortBy || undefined,
-          startAfterId: startAfterId || undefined
-        });
-        
-        const batch = response.data.conversations || [];
-        allConversations = [...allConversations, ...batch];
-        totalFetched += batch.length;
-        
-        // Get cursor for next page
-        if (batch.length > 0) {
-          startAfterId = batch[batch.length - 1].sort?.[0];
-        }
-        
-        hasMore = batch.length === exportLimit;
-        
-        // Estimate total chunks (update as we fetch more)
-        estimatedTotalChunks = Math.ceil(totalFetched / chunkSize);
-        
-        // If we've accumulated enough for a chunk, save it
-        if (allConversations.length >= chunkSize) {
-          const chunk = allConversations.splice(0, chunkSize);
-          const totalChunks = estimatedTotalChunks + (allConversations.length > 0 ? 1 : 0);
-          await downloadChunk(chunk, chunkNumber, totalChunks, startDate, endDate);
-          downloadedChunks.push({ number: chunkNumber, size: chunk.length });
-          chunkNumber++;
-        }
-        
-        // Download remaining conversations when no more data
-        if (!hasMore && allConversations.length > 0) {
-          const totalChunks = chunkNumber;
-          await downloadChunk(allConversations, chunkNumber, totalChunks, startDate, endDate);
-          downloadedChunks.push({ number: chunkNumber, size: allConversations.length });
-          allConversations = []; // Clear after download
-        }
-        
-        // Small delay between requests to respect rate limits
-        if (hasMore) {
-          await new Promise(resolve => setTimeout(resolve, 300));
-        }
-      }
-      
-      // Show success message with chunk info
-      if (downloadedChunks.length > 1) {
-        showInfo(
-          'Export Complete!',
-          `Exported ${totalFetched.toLocaleString()} conversations in ${downloadedChunks.length} files:`,
-          downloadedChunks.map((chunk, i) => ({
-            icon: `${i + 1}️⃣`,
-            title: getConversationChunkFileName(chunk.number, downloadedChunks.length, startDate, endDate),
-            items: [`${chunk.size.toLocaleString()} conversations`]
-          }))
-        );
-      } else if (downloadedChunks.length === 1) {
-        message.success(`Successfully exported ${totalFetched.toLocaleString()} conversations!`);
+      const exportFilters = {
+        startDate: filters.startDate ? dayjs(filters.startDate).startOf('day').valueOf() : undefined,
+        endDate: filters.endDate ? dayjs(filters.endDate).endOf('day').valueOf() : undefined,
+        contactId: filters.contactId || undefined
+      };
+
+      const response = await billingAPI.getEstimate(location.id, 'conversations', exportFilters);
+      if (response.success) {
+        setEstimate(response.data.estimate);
       } else {
-        message.info('No conversations found in the selected date range.');
+        setEstimateError(response.error || 'Failed to calculate estimate');
       }
-      
-    } catch (error) {
-      showError('Export Failed', 'Failed to export conversations. Please try again.');
+    } catch (err) {
+      setEstimateError(err.message || 'Failed to calculate estimate');
     } finally {
-      setDownloading(false);
+      setEstimating(false);
     }
   };
 
-  // Generate descriptive chunk file name for conversations
-  const getConversationChunkFileName = (chunkNumber, totalChunks, startDate, endDate) => {
-    // startDate and endDate are already in YYYY-MM-DD format from ExportModal
-    const chunkSuffix = totalChunks > 1 ? `_chunk_${String(chunkNumber).padStart(3, '0')}_of_${String(totalChunks).padStart(3, '0')}` : '';
-    return `conversations_${startDate}_to_${endDate}${chunkSuffix}.csv`;
+  // Handle pay and export
+  const handlePayAndExport = async (notificationEmail) => {
+    setProcessing(true);
+    setEstimateError(null);
+
+    try {
+      const exportFilters = {
+        startDate: filters.startDate ? dayjs(filters.startDate).startOf('day').valueOf() : undefined,
+        endDate: filters.endDate ? dayjs(filters.endDate).endOf('day').valueOf() : undefined,
+        contactId: filters.contactId || undefined
+      };
+
+      const response = await billingAPI.chargeAndExport(
+        location.id,
+        'conversations',
+        'csv',
+        exportFilters,
+        notificationEmail
+      );
+
+      if (response.success) {
+        setActiveJob({
+          jobId: response.data.jobId,
+          status: response.data.status,
+          totalItems: response.data.totalItems,
+          progress: { total: response.data.totalItems, processed: 0, percent: 0 }
+        });
+        setExportModalVisible(false);
+        setEstimate(null);
+        message.success('Export started! We\'ll process it in the background.');
+      } else {
+        setEstimateError(response.error || 'Export failed');
+      }
+    } catch (err) {
+      setEstimateError(err.message || 'Export failed');
+    } finally {
+      setProcessing(false);
+    }
   };
 
-  // Download a single chunk as CSV
-  const downloadChunk = async (conversations, chunkNumber, totalChunks, startDate, endDate) => {
-    const csvHeaders = 'Conversation ID,Created Date,Contact Name,email,phone,Contact ID,Last Message Date,Last Message Action,Last Message Direction,Last Message,Unread Count,Last Message Channel\n';
-    const csvRows = conversations.map(conv => {
-      const lastMessage = (conv.lastMessageBody || '').replace(/"/g, '""').replace(/\n/g, ' ');
-      const formattedLastMessageDate = formatDate(conv.lastMessageDate);
-      const formattedCreatedDate = formatDate(conv.dateAdded);
-      return `"${conv.id}","${formattedCreatedDate}","${conv.contactName || ''}","${conv.email || ''}","${conv.phone || ''}","${conv.contactId || ''}","${formattedLastMessageDate}","${conv.lastOutboundMessageAction || ''}","${conv.lastMessageDirection || ''}","${lastMessage}","${conv.unreadCount || 0}","${getMessageTypeDisplay(conv.lastMessageType) || ''}"`;
-    }).join('\n');
-    
-    const csv = csvHeaders + csvRows;
-    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
-    const url = window.URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = getConversationChunkFileName(chunkNumber, totalChunks, startDate, endDate);
-    document.body.appendChild(a);
-    a.click();
-    window.URL.revokeObjectURL(url);
-    document.body.removeChild(a);
-    
-    // Small delay between downloads
-    await new Promise(resolve => setTimeout(resolve, 500));
+  // Handle modal close
+  const handleModalClose = () => {
+    if (!processing) {
+      setExportModalVisible(false);
+      setEstimate(null);
+      setEstimateError(null);
+    }
   };
 
   return (
     <div className="space-y-6">
       {ErrorModalComponent}
       {InfoModalComponent}
-      <ExportModal
+
+      {/* Export Estimate Modal */}
+      <ExportEstimateModal
         visible={exportModalVisible}
-        onCancel={() => setExportModalVisible(false)}
-        onExport={handleExport}
-        loading={downloading}
+        onCancel={handleModalClose}
+        onConfirm={handlePayAndExport}
+        loading={processing}
+        estimating={estimating}
+        estimate={estimate}
+        error={estimateError}
+        exportType="conversations"
       />
-      
+
       {/* Header with Stats */}
       <div className="flex items-center justify-between">
         <div>
@@ -246,57 +222,51 @@ export default function ConversationsTab({ onSelectConversation }) {
             <div className="text-xs text-blue-600 font-medium">Total Conversations</div>
           </div>
         )}
-          {conversations.length > 0 && (
-            <div className="flex items-center gap-2">
-              <Button
-                onClick={() => setExportModalVisible(true)}
-                loading={downloading}
-                size="large"
-                type="primary"
-                icon={
-                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
-                  </svg>
-                }
-              >
-                {downloading ? 'Exporting...' : 'Export CSV'}
-              </Button>
-              <Tooltip 
-                title={
-                  <div style={{ fontSize: '13px', lineHeight: '1.6' }}>
-                    <strong>Need additional fields?</strong>
-                    <br />
-                    Raise a request in the Support tab and we'll add them within 24 hours.
-                  </div>
-                }
-                placement="left"
-              >
-                <div className="w-6 h-6 bg-blue-100 rounded-full flex items-center justify-center cursor-help">
-                  <svg className="w-4 h-4 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                  </svg>
+          <div className="flex items-center gap-2">
+            <Button
+              onClick={handleGetEstimate}
+              disabled={activeJob && ['pending', 'processing'].includes(activeJob.status)}
+              size="large"
+              type="primary"
+              className="bg-green-600 hover:bg-green-700 border-green-600"
+              icon={
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+                </svg>
+              }
+            >
+              Export Conversations
+            </Button>
+            <Tooltip
+              title={
+                <div style={{ fontSize: '13px', lineHeight: '1.6' }}>
+                  <strong>Pay-per-use export</strong>
+                  <br />
+                  1 cent per conversation. Volume discounts up to 70%!
                 </div>
-              </Tooltip>
-            </div>
-          )}
-        </div>
-      </div>
-      
-      {/* Export Progress Indicator */}
-      {downloading && (
-        <div className="bg-blue-50 border-2 border-blue-200 rounded-xl p-4">
-          <div className="flex items-center gap-3">
-            <div className="animate-spin h-5 w-5 border-2 border-blue-600 border-t-transparent rounded-full"></div>
-            <div className="flex-1">
-              <span className="text-blue-700 font-medium block">
-                Exporting conversations... This may take a moment for large datasets.
-              </span>
-              <span className="text-blue-600 text-sm block mt-1">
-                Large exports will be split into multiple CSV files (chunks of 50,000 conversations each)
-              </span>
-            </div>
+              }
+              placement="left"
+            >
+              <div className="w-6 h-6 bg-blue-100 rounded-full flex items-center justify-center cursor-help">
+                <svg className="w-4 h-4 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+              </div>
+            </Tooltip>
           </div>
         </div>
+      </div>
+
+      {/* Active Export Job Progress */}
+      {activeJob && (
+        <ExportProgress
+          job={activeJob}
+          onRefresh={() => {
+            billingAPI.getExportStatus(activeJob.jobId, location?.id)
+              .then(res => res.success && setActiveJob(res.data))
+              .catch(console.error);
+          }}
+        />
       )}
 
       {/* Filters Card */}

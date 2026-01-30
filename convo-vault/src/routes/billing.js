@@ -110,15 +110,16 @@ router.post('/estimate', authenticateSession, async (req, res) => {
       const total = result.total || messages.length;
 
       // Count message types from sample
+      // msg.type can be number (1,2,3) or string (TYPE_SMS, TYPE_EMAIL, SMS, Email)
       let smsCount = 0, emailCount = 0, whatsappCount = 0;
       messages.forEach(msg => {
-        const type = (msg.type || '').toLowerCase();
-        if (type === 'email') {
+        const type = String(msg.type || '').toLowerCase();
+        if (type.includes('email') || type === '3' || type === 'type_email') {
           emailCount++;
-        } else if (type === 'whatsapp') {
+        } else if (type.includes('whatsapp')) {
           whatsappCount++;
         } else {
-          smsCount++; // SMS, Call, GMB, FB, etc.
+          smsCount++; // SMS, Call, GMB, FB, etc. (type 1, 2, etc.)
         }
       });
 
@@ -222,12 +223,13 @@ router.post('/charge-and-export', authenticateSession, async (req, res) => {
       totalItems = result.total || messages.length;
 
       // Count types from sample and extrapolate
+      // msg.type can be number (1,2,3) or string (TYPE_SMS, TYPE_EMAIL, SMS, Email)
       let smsCount = 0, emailCount = 0, whatsappCount = 0;
       messages.forEach(msg => {
-        const type = (msg.type || '').toLowerCase();
-        if (type === 'email') emailCount++;
-        else if (type === 'whatsapp') whatsappCount++;
-        else smsCount++;
+        const type = String(msg.type || '').toLowerCase();
+        if (type.includes('email') || type === '3' || type === 'type_email') emailCount++;
+        else if (type.includes('whatsapp')) whatsappCount++;
+        else smsCount++; // SMS, Call, GMB, FB, etc.
       });
 
       if (messages.length > 0 && totalItems > messages.length) {

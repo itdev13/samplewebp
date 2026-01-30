@@ -4,7 +4,6 @@ import Header from './Header';
 import UpdatesBanner from './UpdatesBanner';
 import ConversationsTab from './tabs/ConversationsTab';
 import MessagesTab from './tabs/MessagesTab';
-import ExportTab from './tabs/ExportTab';
 import ImportTab from './tabs/ImportTab';
 import SupportTab from './tabs/SupportTab';
 import ConversationMessages from './ConversationMessages';
@@ -26,7 +25,6 @@ export default function Dashboard() {
   const tabs = [
     { id: 'conversations', label: 'Conversations', icon: '💬' },
     { id: 'messages', label: 'Messages', icon: '📊' },
-    { id: 'export', label: 'Export', icon: '📤' },
     // { id: 'import', label: 'Import', icon: '📥' },
     { id: 'support', label: 'Support', icon: '🆘' }
   ];
@@ -103,7 +101,6 @@ export default function Dashboard() {
                 <ConversationsTab onSelectConversation={handleConversationSelect} />
               )}
               {activeTab === 'messages' && <MessagesTab />}
-              {activeTab === 'export' && <ExportTab />}
               {activeTab === 'import' && <ImportTab />}
               {activeTab === 'support' && <SupportTab />}
             </>
