@@ -689,6 +689,7 @@ exports.handler = async (event, context) => {
       await lambda.invoke({
         FunctionName: context.functionName,
         InvocationType: 'Event',
+        Qualifier: '$LATEST',
         Payload: JSON.stringify({ exportJobId })
       }).promise();
 
