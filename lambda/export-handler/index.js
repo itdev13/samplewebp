@@ -133,8 +133,6 @@ async function fetchMessagesPage(locationId, accessToken, filters, cursor) {
     params
   });
 
-  console.log("response: ", JSON.stringify(response.data));
-
   return {
     data: response.data.messages || [],
     nextCursor: response.data.nextCursor || null
@@ -338,7 +336,27 @@ exports.handler = async (event, context) => {
   console.log('Lambda invoked with event:', JSON.stringify(event, null, 2));
 
   const exportJobId = extractExportJobId(event);
-  console.log('Extracted exportJobId:', exportJobId);
+
+  // Logger with job ID prefix for easy tracing
+  const log = (msg, data = null) => {
+    const prefix = `[Job:${exportJobId}]`;
+    if (data) {
+      console.log(prefix, msg, JSON.stringify(data));
+    } else {
+      console.log(prefix, msg);
+    }
+  };
+
+  const logError = (msg, data = null) => {
+    const prefix = `[Job:${exportJobId}]`;
+    if (data) {
+      console.error(prefix, msg, JSON.stringify(data));
+    } else {
+      console.error(prefix, msg);
+    }
+  };
+
+  log('Lambda started');
 
   if (!exportJobId) {
     console.error('No exportJobId found in event');
@@ -353,17 +371,19 @@ exports.handler = async (event, context) => {
   });
 
   if (!job) {
-    console.error('Job not found:', exportJobId);
+    logError('Job not found');
     return { statusCode: 404, body: JSON.stringify({ error: 'Job not found' }) };
   }
 
+  log('Job loaded', { status: job.status, processedItems: job.processedItems, totalItems: job.totalItems, cursor: job.cursor });
+
   if (job.status === 'completed') {
-    console.log('Job already completed:', exportJobId);
+    log('Job already completed, skipping');
     return { statusCode: 200, body: JSON.stringify({ message: 'Already completed' }) };
   }
 
   if (job.status === 'failed' && job.retryCount >= job.maxRetries) {
-    console.log('Job failed and max retries exceeded:', exportJobId);
+    log('Job failed and max retries exceeded');
     return { statusCode: 400, body: JSON.stringify({ error: 'Max retries exceeded' }) };
   }
 
@@ -374,7 +394,7 @@ exports.handler = async (event, context) => {
   });
 
   if (!oauthToken || !oauthToken.refreshToken) {
-    console.error('No valid OAuth token found for location:', job.locationId);
+    logError('No valid OAuth token found for location:', job.locationId);
     await updateJob(db, exportJobId, {
       status: 'failed',
       errorMessage: 'No valid OAuth token found. Please reconnect your account.'
@@ -390,7 +410,7 @@ exports.handler = async (event, context) => {
    * Refresh token and update OAuthToken collection
    */
   async function refreshAndUpdateToken() {
-    console.log('Refreshing access token...');
+    log('Refreshing access token...');
     const tokenData = await refreshAccessToken(refreshToken);
     accessToken = tokenData.accessToken;
     refreshToken = tokenData.refreshToken;
@@ -406,7 +426,7 @@ exports.handler = async (event, context) => {
         }
       }
     );
-    console.log('Tokens refreshed and saved to OAuthToken collection');
+    log('Tokens refreshed and saved');
     return accessToken;
   }
 
@@ -419,7 +439,7 @@ exports.handler = async (event, context) => {
 
     if (!uploadId) {
       // Start new multipart upload
-      console.log('Starting S3 multipart upload...');
+      log('Starting S3 multipart upload...');
       const multipart = await s3.createMultipartUpload({
         Bucket: S3_BUCKET,
         Key: s3Key,
@@ -428,7 +448,7 @@ exports.handler = async (event, context) => {
       }).promise();
 
       uploadId = multipart.UploadId;
-      console.log('Multipart upload started:', uploadId);
+      log('Multipart upload started', { uploadId });
 
       // Save to DB
       await updateJob(db, exportJobId, {
@@ -448,13 +468,13 @@ exports.handler = async (event, context) => {
     let recordsFetched = 0;
     let hasMoreData = true;
 
-    console.log(`Starting batch. Cursor: ${cursor}, Skip: ${skip}, Already processed: ${job.processedItems || 0}`);
+    log('Starting batch', { cursor, skip, alreadyProcessed: job.processedItems || 0 });
 
     while (recordsFetched < BATCH_SIZE && hasMoreData) {
       // Check if approaching timeout
       const remaining = context.getRemainingTimeInMillis();
       if (remaining < TIMEOUT_BUFFER_MS) {
-        console.log(`Approaching timeout (${remaining}ms remaining), saving progress...`);
+        log('Approaching timeout, saving progress', { remainingMs: remaining });
         break;
       }
 
@@ -469,7 +489,7 @@ exports.handler = async (event, context) => {
       } catch (fetchError) {
         // If 401, refresh token and retry once
         if (fetchError.response?.status === 401) {
-          console.log('Got 401, refreshing token and retrying...');
+          log('Got 401, refreshing token and retrying...');
           await refreshAndUpdateToken();
 
           if (job.exportType === 'conversations') {
@@ -493,7 +513,7 @@ exports.handler = async (event, context) => {
       records.push(...pageResult.data);
       recordsFetched += pageResult.data.length;
 
-      console.log(`Fetched page: ${pageResult.data.length} records. Total this batch: ${recordsFetched}`);
+      log('Fetched page', { pageRecords: pageResult.data.length, batchTotal: recordsFetched, cursor, hasMoreData });
 
       // No more data available - use correct page size for each type
       const pageSize = job.exportType === 'conversations' ? API_PAGE_SIZE : API_MESSAGES_PAGE_SIZE;
@@ -508,7 +528,7 @@ exports.handler = async (event, context) => {
       }
     }
 
-    console.log(`Batch complete. Fetched ${records.length} records. Has more: ${hasMoreData || !!cursor}`);
+    log('Batch complete', { batchRecords: records.length, hasMore: hasMoreData || !!cursor });
 
     // Convert to format and upload as S3 part
     if (records.length > 0) {
@@ -525,7 +545,7 @@ exports.handler = async (event, context) => {
       }
 
       const partNumber = parts.length + 1;
-      console.log(`Uploading S3 part ${partNumber} (${Buffer.byteLength(content)} bytes)...`);
+      log('Uploading S3 part', { partNumber, bytes: Buffer.byteLength(content) });
 
       const uploadResult = await s3.uploadPart({
         Bucket: S3_BUCKET,
@@ -541,16 +561,22 @@ exports.handler = async (event, context) => {
         size: Buffer.byteLength(content)
       });
 
-      console.log(`Part ${partNumber} uploaded. ETag: ${uploadResult.ETag}`);
+      log('Part uploaded', { partNumber, etag: uploadResult.ETag });
     }
 
     // Update progress in DB
     const processedItems = (job.processedItems || 0) + records.length;
     const currentBatch = (job.currentBatch || 0) + 1;
 
+    // Update totalItems if processedItems exceeds it (initial count was an estimate)
+    const totalItems = Math.max(job.totalItems || 0, processedItems);
+
+    log('Updating progress', { processedItems, totalItems, currentBatch, prevProcessed: job.processedItems || 0, recordsThisBatch: records.length });
+
     await updateJob(db, exportJobId, {
       cursor: cursor,
       processedItems,
+      totalItems,
       currentBatch,
       's3Upload.parts': parts
     });
@@ -558,7 +584,7 @@ exports.handler = async (event, context) => {
     // Check if more data exists
     if (hasMoreData || cursor) {
       // More data - invoke next Lambda
-      console.log(`More data available. Processed so far: ${processedItems}. Invoking next Lambda...`);
+      log('Invoking next Lambda', { processedItems, totalItems, cursor, hasMoreData });
 
       await lambda.invoke({
         FunctionName: context.functionName,
@@ -579,7 +605,7 @@ exports.handler = async (event, context) => {
 
     } else {
       // No more data - finalize
-      console.log('All data fetched. Finalizing multipart upload...');
+      log('All data fetched, finalizing...');
 
       // Complete multipart upload
       if (parts.length > 0) {
@@ -595,7 +621,7 @@ exports.handler = async (event, context) => {
           }
         }).promise();
 
-        console.log('Multipart upload completed');
+        log('Multipart upload completed');
       }
 
       // Generate signed download URL (7 days)
@@ -630,7 +656,7 @@ exports.handler = async (event, context) => {
         await updateJob(db, exportJobId, { emailSent });
       }
 
-      console.log(`Export completed successfully. Total: ${processedItems} items, ${currentBatch} batches`);
+      log('Export completed', { processedItems, totalBatches: currentBatch, emailSent });
 
       return {
         statusCode: 200,
@@ -646,14 +672,14 @@ exports.handler = async (event, context) => {
     }
 
   } catch (error) {
-    console.error('Export batch failed:', error);
+    logError('Export batch failed', { error: error.message, stack: error.stack });
 
     // Increment retry count
     const retryCount = (job.retryCount || 0) + 1;
 
     if (retryCount < (job.maxRetries || 3)) {
       // Retry - invoke self again
-      console.log(`Retrying... Attempt ${retryCount + 1}`);
+      log('Retrying...', { attempt: retryCount + 1, maxRetries: job.maxRetries || 3 });
 
       await updateJob(db, exportJobId, { retryCount });
 
@@ -678,7 +704,7 @@ exports.handler = async (event, context) => {
 
     } else {
       // Max retries exceeded - abort multipart upload and fail
-      console.error('Max retries exceeded. Failing job.');
+      logError('Max retries exceeded, failing job');
 
       // Try to abort multipart upload
       if (job.s3Upload?.uploadId) {
@@ -688,9 +714,9 @@ exports.handler = async (event, context) => {
             Key: job.s3Upload.key,
             UploadId: job.s3Upload.uploadId
           }).promise();
-          console.log('Multipart upload aborted');
+          log('Multipart upload aborted');
         } catch (abortError) {
-          console.error('Failed to abort multipart upload:', abortError.message);
+          logError('Failed to abort multipart upload', { error: abortError.message });
         }
       }
 
