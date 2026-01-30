@@ -140,11 +140,19 @@ class BillingService {
 
     const baseAmount = conversationsCost + textMessagesCost + emailCost;
     const totalItems = conversations + smsMessages + emailMessages;
-
+    
     // Calculate discount
     const discountPercent = this.getDiscountPercent(totalItems);
-    const discountAmount = Math.floor(baseAmount * (discountPercent / 100));
+    const discountAmount = baseAmount * (discountPercent / 100);
     const finalAmount = baseAmount - discountAmount;
+
+    logger.info('Billing calculation:', {
+      totalItems,
+      baseAmount,
+      discountPercent,
+      discountAmount,
+      finalAmount
+    });
 
     return {
       itemCounts: {
