@@ -84,7 +84,6 @@ router.post('/estimate', authenticateSession, async (req, res) => {
     let counts = {
       conversations: 0,
       smsMessages: 0,
-      whatsappMessages: 0,
       emailMessages: 0
     };
 
@@ -110,29 +109,25 @@ router.post('/estimate', authenticateSession, async (req, res) => {
       const total = result.total || messages.length;
 
       // Count message types from sample
-      // msg.type can be number (1,2,3) or string (TYPE_SMS, TYPE_EMAIL, SMS, Email)
-      let smsCount = 0, emailCount = 0, whatsappCount = 0;
+      // Email = TYPE_EMAIL or type 3, everything else = text message
+      let textCount = 0, emailCount = 0;
       messages.forEach(msg => {
         const type = String(msg.type || '').toLowerCase();
         if (type.includes('email') || type === '3' || type === 'type_email') {
           emailCount++;
-        } else if (type.includes('whatsapp')) {
-          whatsappCount++;
         } else {
-          smsCount++; // SMS, Call, GMB, FB, etc. (type 1, 2, etc.)
+          textCount++; // SMS, WhatsApp, Call, GMB, FB, etc.
         }
       });
 
       // Extrapolate if we have more items than sample
       if (messages.length > 0 && total > messages.length) {
         const ratio = total / messages.length;
-        counts.smsMessages = Math.round(smsCount * ratio);
+        counts.smsMessages = Math.round(textCount * ratio);
         counts.emailMessages = Math.round(emailCount * ratio);
-        counts.whatsappMessages = Math.round(whatsappCount * ratio);
       } else {
-        counts.smsMessages = smsCount;
+        counts.smsMessages = textCount;
         counts.emailMessages = emailCount;
-        counts.whatsappMessages = whatsappCount;
       }
     }
 
@@ -202,7 +197,6 @@ router.post('/charge-and-export', authenticateSession, async (req, res) => {
     let counts = {
       conversations: 0,
       smsMessages: 0,
-      whatsappMessages: 0,
       emailMessages: 0
     };
     let totalItems = 0;
@@ -223,24 +217,21 @@ router.post('/charge-and-export', authenticateSession, async (req, res) => {
       totalItems = result.total || messages.length;
 
       // Count types from sample and extrapolate
-      // msg.type can be number (1,2,3) or string (TYPE_SMS, TYPE_EMAIL, SMS, Email)
-      let smsCount = 0, emailCount = 0, whatsappCount = 0;
+      // Email = TYPE_EMAIL or type 3, everything else = text message
+      let textCount = 0, emailCount = 0;
       messages.forEach(msg => {
         const type = String(msg.type || '').toLowerCase();
         if (type.includes('email') || type === '3' || type === 'type_email') emailCount++;
-        else if (type.includes('whatsapp')) whatsappCount++;
-        else smsCount++; // SMS, Call, GMB, FB, etc.
+        else textCount++; // SMS, WhatsApp, Call, GMB, FB, etc.
       });
 
       if (messages.length > 0 && totalItems > messages.length) {
         const ratio = totalItems / messages.length;
-        counts.smsMessages = Math.round(smsCount * ratio);
+        counts.smsMessages = Math.round(textCount * ratio);
         counts.emailMessages = Math.round(emailCount * ratio);
-        counts.whatsappMessages = Math.round(whatsappCount * ratio);
       } else {
-        counts.smsMessages = smsCount;
+        counts.smsMessages = textCount;
         counts.emailMessages = emailCount;
-        counts.whatsappMessages = whatsappCount;
       }
     }
 

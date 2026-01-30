@@ -265,7 +265,7 @@ export default function MessagesTab() {
                 <div style={{ fontSize: '13px', lineHeight: '1.6' }}>
                   <strong>Pay-per-use export</strong>
                   <br />
-                  5 cents per text message, 3 cents per email. Volume discounts up to 70%!
+                  1 cent per text message, 3 cents per email. Volume discounts up to 70%!
                 </div>
               }
               placement="left"

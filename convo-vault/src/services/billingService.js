@@ -14,8 +14,8 @@ const METER_IDS = {
 
 // Unit prices in cents (must match GHL meter config)
 const UNIT_PRICES = {
-  conversations: 5,    // 5 cents per conversation
-  smsWhatsapp: 5,      // 5 cents per SMS/WhatsApp message
+  conversations: 1,    // 1 cent per conversation
+  smsWhatsapp: 1,      // 1 cent per text message
   email: 3             // 3 cents per email message
 };
 
@@ -24,9 +24,8 @@ const DISCOUNT_TIERS = [
   { min: 0, max: 1000, discount: 0 },
   { min: 1000, max: 2000, discount: 20 },
   { min: 2000, max: 5000, discount: 40 },
-  { min: 5000, max: 8000, discount: 50 },
-  { min: 8000, max: 30000, discount: 60 },
-  { min: 30000, max: Infinity, discount: 70 }
+  { min: 5000, max: 30000, discount: 50 },
+  { min: 30000, max: Infinity, discount: 60 }
 ];
 
 class BillingService {
@@ -58,24 +57,23 @@ class BillingService {
 
   /**
    * Calculate pricing estimate for export
-   * @param {Object} counts - Item counts { conversations, smsMessages, whatsappMessages, emailMessages }
+   * @param {Object} counts - Item counts { conversations, smsMessages, emailMessages }
    * @returns {Object} Pricing estimate with breakdown
    */
   calculateEstimate(counts) {
     const {
       conversations = 0,
       smsMessages = 0,
-      whatsappMessages = 0,
       emailMessages = 0
     } = counts;
 
     // Calculate base amounts (in cents)
     const conversationsCost = conversations * UNIT_PRICES.conversations;
-    const smsWhatsappCost = (smsMessages + whatsappMessages) * UNIT_PRICES.smsWhatsapp;
+    const textMessagesCost = smsMessages * UNIT_PRICES.smsWhatsapp;
     const emailCost = emailMessages * UNIT_PRICES.email;
 
-    const baseAmount = conversationsCost + smsWhatsappCost + emailCost;
-    const totalItems = conversations + smsMessages + whatsappMessages + emailMessages;
+    const baseAmount = conversationsCost + textMessagesCost + emailCost;
+    const totalItems = conversations + smsMessages + emailMessages;
 
     // Calculate discount
     const discountPercent = this.getDiscountPercent(totalItems);
@@ -86,7 +84,6 @@ class BillingService {
       itemCounts: {
         conversations,
         smsMessages,
-        whatsappMessages,
         emailMessages,
         total: totalItems
       },
@@ -97,9 +94,9 @@ class BillingService {
           subtotal: conversationsCost
         },
         smsWhatsapp: {
-          count: smsMessages + whatsappMessages,
+          count: smsMessages,
           unitPrice: UNIT_PRICES.smsWhatsapp,
-          subtotal: smsWhatsappCost
+          subtotal: textMessagesCost
         },
         email: {
           count: emailMessages,
@@ -225,12 +222,11 @@ class BillingService {
       });
     }
 
-    const smsWhatsappCount = (counts.smsMessages || 0) + (counts.whatsappMessages || 0);
-    if (smsWhatsappCount > 0) {
+    if (counts.smsMessages > 0) {
       charges.push({
         meterId: METER_IDS.smsWhatsapp,
-        qty: smsWhatsappCount,
-        description: 'SMS/WhatsApp message exports'
+        qty: counts.smsMessages,
+        description: 'Text message exports'
       });
     }
 
