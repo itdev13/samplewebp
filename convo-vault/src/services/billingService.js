@@ -216,7 +216,7 @@ class BillingService {
         }
       );
 
-      logger.info('Wallet funds check:', { companyId, hasFunds: response.data.hasFunds });
+      logger.info('Wallet funds check:', { companyId, response: response?.data });
       return response.data.hasFunds === true;
     } catch (error) {
       logger.error('Failed to check wallet funds:', {
@@ -271,6 +271,7 @@ class BillingService {
         });
 
         logger.info('Wallet charge successful:', {
+          response: response.data,
           meterId: charge.meterId,
           chargeId: chargeResults[chargeResults.length - 1].chargeId
         });
