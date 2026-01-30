@@ -177,7 +177,8 @@ export default function MessagesTab() {
         channel: filters.channel || undefined,
         startDate: filters.startDate ? dayjs(filters.startDate).startOf('day').valueOf() : undefined,
         endDate: filters.endDate ? dayjs(filters.endDate).endOf('day').valueOf() : undefined,
-        contactId: filters.contactId || undefined
+        contactId: filters.contactId || undefined,
+        conversationId: filters.conversationId || undefined
       };
 
       const response = await billingAPI.chargeAndExport(

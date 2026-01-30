@@ -45,7 +45,7 @@ class BillingService {
    * @param {string} accessToken - GHL access token
    * @returns {Object} Prices per meter in cents
    */
-  async fetchMeterPrices(accessToken) {
+  async fetchMeterPrices(accessToken, locationId) {
     // Return cached if still valid (cache for 1 hour)
     if (cachedPrices && cacheExpiry && Date.now() < cacheExpiry) {
       return cachedPrices;
@@ -53,7 +53,7 @@ class BillingService {
 
     try {
       const response = await axios.get(
-        `${this.baseURL}/marketplace/billing/charges/rebilling-config/${APP_ID}`,
+        `${this.baseURL}/marketplace/billing/charges/rebilling-config/${APP_ID}/location/${locationId}`,
         {
           headers: {
             'Authorization': `Bearer ${accessToken}`,
@@ -192,8 +192,8 @@ class BillingService {
    * @param {string} accessToken - GHL access token
    * @returns {Object} Pricing estimate with actual GHL prices
    */
-  async calculateEstimateWithPrices(counts, accessToken) {
-    const prices = await this.fetchMeterPrices(accessToken);
+  async calculateEstimateWithPrices(counts, accessToken, locationId) {
+    const prices = await this.fetchMeterPrices(accessToken, locationId);
     return this.calculateEstimate(counts, prices);
   }
 

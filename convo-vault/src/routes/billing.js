@@ -136,7 +136,7 @@ router.post('/estimate', authenticateSession, async (req, res) => {
     const accessToken = tokenData.accessToken || tokenData;
 
     // Calculate estimate with actual GHL meter prices
-    const estimate = await billingService.calculateEstimateWithPrices(counts, accessToken);
+    const estimate = await billingService.calculateEstimateWithPrices(counts, accessToken, locationId);
 
     res.json({
       success: true,
@@ -251,7 +251,7 @@ router.post('/charge-and-export', authenticateSession, async (req, res) => {
     const accessToken = tokenData.accessToken || tokenData;
 
     // Step 3: Calculate pricing with actual GHL meter prices
-    const estimate = await billingService.calculateEstimateWithPrices(counts, accessToken);
+    const estimate = await billingService.calculateEstimateWithPrices(counts, accessToken, locationId);
 
     // Step 4: Check wallet funds
     const hasFunds = await billingService.hasFunds(companyId, accessToken);
