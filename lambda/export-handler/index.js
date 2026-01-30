@@ -147,6 +147,20 @@ function escapeCsv(val) {
 }
 
 /**
+ * Format date to readable string (ISO format)
+ */
+function formatDate(val) {
+  if (!val) return '';
+  try {
+    const date = new Date(val);
+    if (isNaN(date.getTime())) return '';
+    return date.toISOString();
+  } catch {
+    return '';
+  }
+}
+
+/**
  * Convert conversations to CSV format
  */
 function conversationsToCSV(conversations, includeHeader = true) {
@@ -163,9 +177,9 @@ function conversationsToCSV(conversations, includeHeader = true) {
       escapeCsv(conv.phone),
       escapeCsv(conv.type),
       escapeCsv(conv.lastMessageType),
-      escapeCsv(conv.lastMessageDate),
+      escapeCsv(formatDate(conv.lastMessageDate)),
       escapeCsv(conv.unreadCount || 0),
-      escapeCsv(conv.dateAdded)
+      escapeCsv(formatDate(conv.dateAdded))
     ].join(',');
   }).join('\n');
 
@@ -181,11 +195,10 @@ function messagesToCSV(messages, includeHeader = true) {
     : '';
 
   const rows = messages.map(msg => {
-    const date = msg.dateAdded ? new Date(msg.dateAdded).toISOString() : '';
     const direction = msg.direction || msg?.meta?.email?.direction || 'outbound';
 
     return [
-      escapeCsv(date),
+      escapeCsv(formatDate(msg.dateAdded)),
       escapeCsv(msg.conversationId),
       escapeCsv(msg.contactId),
       escapeCsv(msg.type),
