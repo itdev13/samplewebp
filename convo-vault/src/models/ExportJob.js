@@ -177,12 +177,6 @@ const exportJobSchema = new mongoose.Schema({
   userId: {
     type: String,
     default: null
-  },
-
-  // Store refresh token for Lambda to use
-  refreshToken: {
-    type: String,
-    default: null
   }
 
 }, {

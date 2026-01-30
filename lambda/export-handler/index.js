@@ -48,6 +48,7 @@ async function getDb() {
 
 /**
  * Refresh GHL access token
+ * Returns both the new access token and new refresh token
  */
 async function refreshAccessToken(refreshToken) {
   const params = new URLSearchParams();
@@ -60,7 +61,10 @@ async function refreshAccessToken(refreshToken) {
     headers: { 'Content-Type': 'application/x-www-form-urlencoded' }
   });
 
-  return response.data.access_token;
+  return {
+    accessToken: response.data.access_token,
+    refreshToken: response.data.refresh_token
+  };
 }
 
 /**
@@ -362,11 +366,50 @@ exports.handler = async (event, context) => {
     return { statusCode: 400, body: JSON.stringify({ error: 'Max retries exceeded' }) };
   }
 
-  try {
-    // Get fresh access token
+  // Fetch OAuth token from oauthtokens collection
+  const oauthToken = await db.collection('oauthtokens').findOne({
+    locationId: job.locationId,
+    isActive: true
+  });
+
+  if (!oauthToken || !oauthToken.refreshToken) {
+    console.error('No valid OAuth token found for location:', job.locationId);
+    await updateJob(db, exportJobId, {
+      status: 'failed',
+      errorMessage: 'No valid OAuth token found. Please reconnect your account.'
+    });
+    return { statusCode: 401, body: JSON.stringify({ error: 'No valid OAuth token found' }) };
+  }
+
+  // Token state from OAuthToken collection
+  let accessToken = oauthToken.accessToken;
+  let refreshToken = oauthToken.refreshToken;
+
+  /**
+   * Refresh token and update OAuthToken collection
+   */
+  async function refreshAndUpdateToken() {
     console.log('Refreshing access token...');
-    const accessToken = await refreshAccessToken(job.refreshToken);
-    console.log('Access token refreshed successfully');
+    const tokenData = await refreshAccessToken(refreshToken);
+    accessToken = tokenData.accessToken;
+    refreshToken = tokenData.refreshToken;
+
+    // Update tokens in OAuthToken collection (single source of truth)
+    await db.collection('oauthtokens').updateOne(
+      { _id: oauthToken._id },
+      {
+        $set: {
+          accessToken: tokenData.accessToken,
+          refreshToken: tokenData.refreshToken,
+          expiresAt: new Date(Date.now() + 24 * 60 * 60 * 1000) // 24 hours
+        }
+      }
+    );
+    console.log('Tokens refreshed and saved to OAuthToken collection');
+    return accessToken;
+  }
+
+  try {
 
     // Initialize or get S3 multipart upload
     let uploadId = job.s3Upload?.uploadId;
@@ -414,14 +457,34 @@ exports.handler = async (event, context) => {
         break;
       }
 
-      // Fetch page based on export type
+      // Fetch page based on export type, with 401 retry
       let pageResult;
+      try {
+        if (job.exportType === 'conversations') {
+          pageResult = await fetchConversationsPage(job.locationId, accessToken, job.filters || {}, skip);
+        } else {
+          pageResult = await fetchMessagesPage(job.locationId, accessToken, job.filters || {}, cursor);
+        }
+      } catch (fetchError) {
+        // If 401, refresh token and retry once
+        if (fetchError.response?.status === 401) {
+          console.log('Got 401, refreshing token and retrying...');
+          await refreshAndUpdateToken();
+
+          if (job.exportType === 'conversations') {
+            pageResult = await fetchConversationsPage(job.locationId, accessToken, job.filters || {}, skip);
+          } else {
+            pageResult = await fetchMessagesPage(job.locationId, accessToken, job.filters || {}, cursor);
+          }
+        } else {
+          throw fetchError;
+        }
+      }
+
       if (job.exportType === 'conversations') {
-        pageResult = await fetchConversationsPage(job.locationId, accessToken, job.filters || {}, skip);
         hasMoreData = pageResult.hasMore;
         skip += pageResult.data.length;
       } else {
-        pageResult = await fetchMessagesPage(job.locationId, accessToken, job.filters || {}, cursor);
         cursor = pageResult.nextCursor;
         hasMoreData = !!cursor;
       }

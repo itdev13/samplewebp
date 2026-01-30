@@ -311,7 +311,7 @@ router.post('/charge-and-export', authenticateSession, async (req, res) => {
       });
     }
 
-    // Step 7: Get refresh token for Lambda to use
+    // Step 7: Verify OAuth token exists for this location
     const oauthToken = await OAuthToken.findActiveToken(locationId);
     if (!oauthToken || !oauthToken.refreshToken) {
       return res.status(400).json({
@@ -320,7 +320,7 @@ router.post('/charge-and-export', authenticateSession, async (req, res) => {
       });
     }
 
-    // Step 8: Create export job with refresh token
+    // Step 8: Create export job (Lambda will fetch tokens from OAuthToken collection)
     const exportJob = await ExportJob.create({
       locationId,
       companyId,
@@ -336,8 +336,7 @@ router.post('/charge-and-export', authenticateSession, async (req, res) => {
       totalItems,
       status: 'pending',
       notificationEmail: notificationEmail || null,
-      userId,
-      refreshToken: oauthToken.refreshToken  // Store for Lambda
+      userId
     });
 
     // Update transaction with job reference
