@@ -25,7 +25,7 @@ const EMAIL_FROM = process.env.EMAIL_FROM || 'noreply@vaultsuite.store';
 // Batch processing configuration
 const BATCH_SIZE = 10000;           // Records per Lambda invocation
 const API_PAGE_SIZE = 100;          // Records per GHL API call
-const TIMEOUT_BUFFER_MS = 2 * 60 * 1000;  // 2 min buffer before timeout
+const TIMEOUT_BUFFER_MS = 14 * 60 * 1000;  // 2 min buffer before timeout
 
 // MongoDB client (reused across warm invocations)
 let dbClient = null;
@@ -127,6 +127,8 @@ async function fetchMessagesPage(locationId, accessToken, filters, cursor) {
     },
     params
   });
+
+  console.log("response: ", JSON.stringify(response.data));
 
   return {
     data: response.data.messages || [],
