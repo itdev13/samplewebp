@@ -234,7 +234,7 @@ class BillingService {
    * @param {Array} meterCharges - Array of { meterId, qty, description }
    * @returns {Object} Charge result with charge IDs
    */
-  async chargeWallet(companyId, accessToken, meterCharges) {
+  async chargeWallet(companyId, accessToken, meterCharges, locationId, transactionId) {
     try {
       const chargeResults = [];
 
@@ -252,7 +252,10 @@ class BillingService {
           {
             companyId,
             meterId: charge.meterId,
-            qty: charge.qty
+            units: charge.qty,
+            appId: process.env.GHL_APP_ID || "694f93f8a6babf0c821b1356",
+            eventId: transactionId,
+            locationId: locationId
           },
           {
             headers: {

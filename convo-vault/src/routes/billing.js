@@ -287,7 +287,7 @@ router.post('/charge-and-export', authenticateSession, async (req, res) => {
 
     // Step 6: Charge wallet
     try {
-      const chargeResult = await billingService.chargeWallet(companyId, accessToken, meterCharges);
+      const chargeResult = await billingService.chargeWallet(companyId, accessToken, meterCharges, locationId, transaction._id.toString());
 
       // Update transaction with charge IDs
       transaction.ghlChargeId = chargeResult.charges.map(c => c.chargeId).join(',');
