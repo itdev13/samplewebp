@@ -528,7 +528,7 @@ exports.handler = async (event, context) => {
       }
     }
 
-    log('Batch complete', { batchRecords: records.length, hasMore: hasMoreData || !!cursor });
+    log('Batch complete', { processedItems: job.processedItems,  batchRecords: records.length, hasMore: hasMoreData || !!cursor });
 
     // Convert to format and upload as S3 part
     if (records.length > 0) {
@@ -545,7 +545,6 @@ exports.handler = async (event, context) => {
       }
 
       const partNumber = parts.length + 1;
-      log('Uploading S3 part', { partNumber, bytes: Buffer.byteLength(content) });
 
       const uploadResult = await s3.uploadPart({
         Bucket: S3_BUCKET,
@@ -561,7 +560,6 @@ exports.handler = async (event, context) => {
         size: Buffer.byteLength(content)
       });
 
-      log('Part uploaded', { partNumber, etag: uploadResult.ETag });
     }
 
     // Update progress in DB
@@ -569,7 +567,7 @@ exports.handler = async (event, context) => {
     const currentBatch = (job.currentBatch || 0) + 1;
 
     // Update totalItems if processedItems exceeds it (initial count was an estimate)
-    const totalItems = Math.max(job.totalItems || 0, processedItems);
+    const totalItems = job.totalItems;
 
     log('Updating progress', { processedItems, totalItems, currentBatch, prevProcessed: job.processedItems || 0, recordsThisBatch: records.length });
 
