@@ -478,6 +478,16 @@ exports.handler = async (event, context) => {
         break;
       }
 
+      // Check if we've already fetched all items (avoid extra API call when count matches exactly)
+      if (job.totalItems > 0) {
+        const totalProcessed = (job.processedItems || 0) + recordsFetched;
+        if (totalProcessed >= job.totalItems) {
+          log('Reached totalItems count, stopping fetch', { totalProcessed, totalItems: job.totalItems });
+          hasMoreData = false;
+          break;
+        }
+      }
+
       // Fetch page based on export type, with 401 retry
       let pageResult;
       try {
@@ -530,11 +540,16 @@ exports.handler = async (event, context) => {
 
     log('Batch complete', { processedItems: job.processedItems,  batchRecords: records.length, cursor: cursor, hasMore: hasMoreData || !!cursor });
 
-    // Convert to format and upload as S3 part
-    if (records.length > 0) {
-      const isFirstPart = parts.length === 0;
-      const isLastPart = !hasMoreData && !cursor;
+    // Convert to format and upload
+    const isFirstPart = parts.length === 0;
+    const isLastPart = !hasMoreData && !cursor;
+    let useSimpleUpload = false;  // Flag to skip multipart finalization
 
+    if (records.length > 0 || (isFirstPart && isLastPart && records.length === 0)) {
+      // Handle empty export case
+      if (records.length === 0) {
+        log('Empty export, creating empty file');
+      }
       let content;
       if (job.format === 'json') {
         content = toJSON(records, job.exportType, isFirstPart, isLastPart);
@@ -544,22 +559,60 @@ exports.handler = async (event, context) => {
           : messagesToCSV(records, isFirstPart);
       }
 
-      const partNumber = parts.length + 1;
+      const contentSize = Buffer.byteLength(content);
 
-      const uploadResult = await s3.uploadPart({
-        Bucket: S3_BUCKET,
-        Key: s3Key,
-        UploadId: uploadId,
-        PartNumber: partNumber,
-        Body: content
-      }).promise();
+      // If this is both first and last part (single batch export), use putObject directly
+      // This avoids S3 multipart upload issues with small files (< 5MB)
+      if (isFirstPart && isLastPart) {
+        log('Single batch export, using putObject directly', { contentSize });
 
-      parts.push({
-        partNumber,
-        etag: uploadResult.ETag,
-        size: Buffer.byteLength(content)
-      });
+        // Abort the multipart upload we started (if any)
+        if (uploadId) {
+          try {
+            await s3.abortMultipartUpload({
+              Bucket: S3_BUCKET,
+              Key: s3Key,
+              UploadId: uploadId
+            }).promise();
+            log('Aborted unused multipart upload');
+          } catch (abortErr) {
+            // Ignore abort errors
+            log('Could not abort multipart upload (may not exist yet)', { error: abortErr.message });
+          }
+        }
 
+        // Upload directly with putObject
+        await s3.putObject({
+          Bucket: S3_BUCKET,
+          Key: s3Key,
+          Body: content,
+          ContentType: job.format === 'json' ? 'application/json' : 'text/csv',
+          ContentDisposition: `attachment; filename="${job.exportType}_export.${job.format}"`
+        }).promise();
+
+        log('File uploaded with putObject');
+        useSimpleUpload = true;
+
+      } else {
+        // Multi-batch: use multipart upload
+        const partNumber = parts.length + 1;
+
+        const uploadResult = await s3.uploadPart({
+          Bucket: S3_BUCKET,
+          Key: s3Key,
+          UploadId: uploadId,
+          PartNumber: partNumber,
+          Body: content
+        }).promise();
+
+        parts.push({
+          partNumber,
+          etag: uploadResult.ETag,
+          size: contentSize
+        });
+
+        log('Uploaded part', { partNumber, size: contentSize });
+      }
     }
 
     // Update progress in DB
@@ -605,8 +658,8 @@ exports.handler = async (event, context) => {
       // No more data - finalize
       log('All data fetched, finalizing...');
 
-      // Complete multipart upload
-      if (parts.length > 0) {
+      // Complete multipart upload (only if we didn't use simple putObject)
+      if (!useSimpleUpload && parts.length > 0) {
         await s3.completeMultipartUpload({
           Bucket: S3_BUCKET,
           Key: s3Key,
@@ -620,6 +673,8 @@ exports.handler = async (event, context) => {
         }).promise();
 
         log('Multipart upload completed');
+      } else if (useSimpleUpload) {
+        log('Skipping multipart completion (used putObject)');
       }
 
       // Generate signed download URL (7 days)
