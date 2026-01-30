@@ -349,6 +349,7 @@ router.post('/charge-and-export', authenticateSession, async (req, res) => {
       const lambdaParams = {
         FunctionName: LAMBDA_FUNCTION_NAME,
         InvocationType: 'Event',  // Async invocation
+        Qualifier: '$LATEST',     // Required for durable functions
         Payload: JSON.stringify({
           exportJobId: exportJob._id.toString()
         })
@@ -388,7 +389,7 @@ router.post('/charge-and-export', authenticateSession, async (req, res) => {
 
     res.json({
       success: true,
-      message: 'Export started successfully',
+      message: exportJob.status != 'failed' ? "Exported started successfully" : "Export failed",
       data: {
         jobId: exportJob._id,
         transactionId: transaction._id,
