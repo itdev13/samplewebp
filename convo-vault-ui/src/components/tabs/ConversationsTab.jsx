@@ -242,7 +242,7 @@ export default function ConversationsTab({ onSelectConversation }) {
                 <div style={{ fontSize: '13px', lineHeight: '1.6' }}>
                   <strong>Pay-per-use export</strong>
                   <br />
-                  1 cent per conversation. Volume discounts up to 70%!
+                  5 cents per conversation. Volume discounts up to 70%!
                 </div>
               }
               placement="left"

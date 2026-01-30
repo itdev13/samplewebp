@@ -12,10 +12,10 @@ const METER_IDS = {
   email: '697bc4342605e37af1f2f385'
 };
 
-// Unit prices in cents
+// Unit prices in cents (must match GHL meter config)
 const UNIT_PRICES = {
-  conversations: 1,    // 1 cent per conversation
-  smsWhatsapp: 1,      // 1 cent per SMS/WhatsApp message
+  conversations: 5,    // 5 cents per conversation
+  smsWhatsapp: 5,      // 5 cents per SMS/WhatsApp message
   email: 3             // 3 cents per email message
 };
 
