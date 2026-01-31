@@ -213,13 +213,16 @@ function messagesToCSV(messages, includeHeader = true, channelFilter = '') {
 
     // For emails, get email-specific fields from meta
     const emailMeta = msg.meta?.email || {};
-    const subject = emailMeta.subject || '';
-    const cc = emailMeta.cc || '';
-    const bcc = emailMeta.bcc || '';
+    const subject = emailMeta.subject || msg?.subject || '';
+    const cc = emailMeta.cc || msg?.cc || '';
+    const bcc = emailMeta.bcc || msg?.bcc || '';
 
     // From/To: for emails use email addresses, for others use phone numbers
-    const from = (isEmail ? emailMeta.from : msg.from) || '';
-    const to = (isEmail ? emailMeta.to : msg.to) || '';
+    const from = (isEmail ? emailMeta.from || msg.from : msg.from) || '';
+    let to = (isEmail ? emailMeta.to || msg.to : msg.to) || '';
+    if(Array.isArray(to)){
+      to = to?.join(";");
+    }
 
     // Attachments as semicolon-separated URLs
     const attachments = Array.isArray(msg.attachments) ? msg.attachments.join('; ') : '';
