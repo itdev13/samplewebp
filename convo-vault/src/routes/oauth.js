@@ -356,7 +356,7 @@ router.get('/callback', async (req, res) => {
             
             <div class="highlight-box">
               <h3>🎯 How to Access ConvoVault:</h3>
-              <div class="step">Open your sub-account dashboard</div>
+              <div class="step">Open your account dashboard</div>
               <div class="step">Find <strong style="color: #2563EB;">"ConvoVault"</strong> in the left sidebar menu</div>
               <div class="step">Click to launch and start managing conversations</div>
             </div>
