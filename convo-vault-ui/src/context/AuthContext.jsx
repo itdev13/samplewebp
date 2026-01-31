@@ -62,7 +62,6 @@ export const AuthProvider = ({ children }) => {
 
     try {
       setLoading(true);
-      console.log('[authenticateUser] Calling authAPI.verify...');
 
       const response = await authAPI.verify({
         locationId: ghlContext.locationId,
@@ -72,25 +71,19 @@ export const AuthProvider = ({ children }) => {
 
       // Success! Store session token
       localStorage.setItem('sessionToken', response.sessionToken);
-      console.log('[authenticateUser] Session token stored in localStorage');
 
       setSession({
         token: response.sessionToken,
         user: response.user,
         locationId: response.location.id
       });
-      console.log('[authenticateUser] setSession called');
 
       setLocation(response.location);
-      console.log('[authenticateUser] setLocation called');
 
       setError(null);
 
-      // PROACTIVE TOKEN VALIDATION: Verify token health immediately
-      console.log('[authenticateUser] Starting proactive token validation...');
       try {
         await authAPI.getSession();
-        console.log('[authenticateUser] Token validation SUCCESS');
       } catch (validationError) {
         // Check if it's a token expiration error
         const errorMsg = validationError.message || '';

@@ -13,7 +13,6 @@ export default function ExportEstimateModal({
   error = null,
   exportType = 'messages'
 }) {
-  console.log("estimates: ", estimate);
   const [email, setEmail] = useState('');
 
   // Format currency (value is in dollars)

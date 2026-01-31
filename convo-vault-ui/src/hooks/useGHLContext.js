@@ -16,7 +16,7 @@ export const useGHLContext = () => {
   useEffect(() => {
     let timeoutId;
     let messageHandler;
-    
+
     // Skip if already resolved (prevents React StrictMode double-run)
     if (resolvedRef.current) {
       console.log('[useGHLContext] ⏭️ Skipping - already resolved');
@@ -37,7 +37,6 @@ export const useGHLContext = () => {
 
               // Response with encrypted user data
               if (data.message === 'REQUEST_USER_DATA_RESPONSE' && !resolvedRef.current) {
-                console.log('[useGHLContext] Got REQUEST_USER_DATA_RESPONSE, processing...');
                 // Clear timeout immediately!
                 if (localTimeoutId) {
                   clearTimeout(localTimeoutId);
@@ -46,7 +45,6 @@ export const useGHLContext = () => {
 
                 // Production backend on AWS ALB
                 const decryptUrl = `${API_BASE_URL}/api/auth/decrypt-user-data`;
-                console.log('[useGHLContext] Calling decrypt URL:', decryptUrl);
 
                 fetch(decryptUrl, {
                   method: 'POST',
@@ -101,7 +99,6 @@ export const useGHLContext = () => {
 
         // Try to get user context
         try {
-          console.log('[useGHLContext] Calling getUserContext...');
           const userData = await getUserContext();
           console.log('[useGHLContext] getUserContext SUCCESS');
 
@@ -115,7 +112,6 @@ export const useGHLContext = () => {
             type: userData.type || (userData.activeLocation ? 'Location' : 'Agency')
           };
 
-          console.log('[useGHLContext] Setting context:', ctx);
           setContext(ctx);
           setLoading(false);
 
@@ -130,33 +126,11 @@ export const useGHLContext = () => {
           return;
         }
 
-          // Fallback: URL parameters (for development/testing)
-            const params = new URLSearchParams(window.location.search);
-          const urlLocationId = params.get('location_id') || params.get('locationId');
-          const urlUserId = params.get('user_id') || params.get('userId');
-          const urlCompanyId = params.get('company_id') || params.get('companyId');
-
-          console.log('[useGHLContext] Checking URL params fallback:', {
-            urlLocationId,
-            urlUserId,
-            urlCompanyId
-          });
-
-          if (urlLocationId && urlUserId) {
-            console.log('[useGHLContext] Using URL params as fallback');
-                setContext({
-              locationId: urlLocationId,
-              companyId: urlCompanyId || 'unknown',
-              userId: urlUserId,
-                  type: 'Location'
-                });
-                setLoading(false);
-          } else {
-            // No context available - redirect to about page on FRONTEND
-            console.log('[useGHLContext] ⚠️ NO CONTEXT AVAILABLE - REDIRECTING TO ABOUT PAGE');
-            console.log('[useGHLContext] Redirect URL:', `${FRONTEND_URL}/about.html`);
-            window.location.href = `${FRONTEND_URL}/about.html`;
-          }
+      
+          // No context available - redirect to about page on FRONTEND
+          console.log('[useGHLContext] ⚠️ NO CONTEXT AVAILABLE - REDIRECTING TO ABOUT PAGE');
+          console.log('[useGHLContext] Redirect URL:', `${FRONTEND_URL}/about.html`);
+          window.location.href = `${FRONTEND_URL}/about.html`;
         }
       } catch (err) {
         console.error('[useGHLContext] ❌ GHL Context Error:', err.message || 'Context initialization failed');
