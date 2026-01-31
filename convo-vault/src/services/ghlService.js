@@ -560,11 +560,17 @@ class GHLService {
       }
 
       if (options.startDate) {
-         params.startDate = new Date(Number(options.startDate)); // Convert to millisecond timestamp
+         // Pass as ISO string for messages API
+         params.startDate = typeof options.startDate === 'string'
+           ? options.startDate
+           : new Date(options.startDate).toISOString();
       }
-      
+
       if (options.endDate) {
-          params.endDate = new Date(Number(options.endDate)); // Convert to millisecond timestamp
+          // Pass as ISO string for messages API
+          params.endDate = typeof options.endDate === 'string'
+            ? options.endDate
+            : new Date(options.endDate).toISOString();
       }
 
       // Contact filter

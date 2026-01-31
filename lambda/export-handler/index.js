@@ -114,16 +114,16 @@ async function fetchMessagesPage(locationId, accessToken, filters, cursor) {
     ...filters
   };
 
-  // Convert date filters to timestamps (start of day / end of day)
+  // Convert date filters to ISO strings (start of day / end of day)
   if (params.startDate) {
     const date = new Date(params.startDate);
     date.setHours(0, 0, 0, 0); // 12:00 AM
-    params.startDate = date.getTime();
+    params.startDate = date.toISOString();
   }
   if (params.endDate) {
     const date = new Date(params.endDate);
     date.setHours(23, 59, 59, 999); // 11:59 PM
-    params.endDate = date.getTime();
+    params.endDate = date.toISOString();
   }
 
   if (cursor) {
