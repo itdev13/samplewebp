@@ -136,6 +136,24 @@ export default function ExportProgress({ job, onDownload, onRefresh }) {
         </div>
       )}
 
+      {/* Info message for pending/processing - user can close page */}
+      {['pending', 'processing'].includes(job.status) && (
+        <div className="mt-4 bg-blue-50 border border-blue-200 rounded-lg p-3">
+          <div className="flex items-start gap-2">
+            <svg className="w-5 h-5 text-blue-500 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+            </svg>
+            <div>
+              <p className="text-sm text-blue-800 font-medium">You can close this page</p>
+              <p className="text-xs text-blue-600 mt-1">
+                We'll send you an email with the download link when your export is ready.
+                You can also check the <span className="font-semibold">Exports</span> tab anytime to view your export history and download files.
+              </p>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Billing Info */}
       {job.billing && (
         <div className="mt-3 pt-3 border-t border-gray-100 flex justify-between items-center text-xs text-gray-500">
