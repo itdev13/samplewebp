@@ -93,16 +93,38 @@ class GHLService {
         logger.info('Company token needs refresh before generating location token');
         try {
           const refreshedToken = await this.refreshAccessToken(companyToken.refreshToken);
-          
+
           companyToken.accessToken = refreshedToken.accessToken;
           companyToken.refreshToken = refreshedToken.refreshToken;
           companyToken.expiresAt = new Date(Date.now() + refreshedToken.expiresIn * 1000);
           await companyToken.save();
-          
+
           logger.info('✅ Company token refreshed successfully');
         } catch (refreshError) {
-          logger.error('Failed to refresh company token:', refreshError.message);
-          throw new Error('Company token expired. Please reconnect your account.');
+          // Handle "invalid_grant" - refresh token was already used by another process
+          if (refreshError.response?.data?.error === 'invalid_grant') {
+            logger.info('Company refresh token already used, fetching latest...');
+
+            // Re-fetch latest company token from DB
+            const latestCompanyToken = await OAuthToken.findOne({
+              companyId,
+              tokenType: 'company',
+              isActive: true
+            });
+
+            if (latestCompanyToken && latestCompanyToken.accessToken !== companyToken.accessToken) {
+              logger.info('Using company token refreshed by another process');
+              companyToken.accessToken = latestCompanyToken.accessToken;
+              companyToken.refreshToken = latestCompanyToken.refreshToken;
+              companyToken.expiresAt = latestCompanyToken.expiresAt;
+            } else {
+              logger.error('Failed to refresh company token:', refreshError.message);
+              throw new Error('Company token expired. Please reconnect your account.');
+            }
+          } else {
+            logger.error('Failed to refresh company token:', refreshError.message);
+            throw new Error('Company token expired. Please reconnect your account.');
+          }
         }
       }
 
@@ -133,27 +155,54 @@ class GHLService {
       // If we get 401 and haven't retried yet, refresh company token and retry
       if (error.response?.status === 401 && retryCount === 0) {
         logger.info('🔄 Got 401 generating location token, refreshing company token and retrying...');
-        
+
         try {
           // Force refresh the company token
-          const companyToken = await OAuthToken.findOne({ 
-            companyId, 
+          const companyToken = await OAuthToken.findOne({
+            companyId,
             tokenType: 'company',
-            isActive: true 
+            isActive: true
           });
-          
+
           if (!companyToken || !companyToken.refreshToken) {
             throw new Error('No company refresh token available');
           }
 
-          const refreshedToken = await this.refreshAccessToken(companyToken.refreshToken);
-          
-          companyToken.accessToken = refreshedToken.accessToken;
-          companyToken.refreshToken = refreshedToken.refreshToken;
-          companyToken.expiresAt = new Date(Date.now() + refreshedToken.expiresIn * 1000);
-          await companyToken.save();
+          // Check if token was recently refreshed by another process
+          const expiresIn = companyToken.expiresAt - Date.now();
+          if (expiresIn > 23 * 60 * 60 * 1000) {
+            logger.info('Company token was recently refreshed, retrying with new token');
+            return await this.getLocationTokenFromCompany(companyId, locationId, retryCount + 1);
+          }
 
-          logger.info('✅ Company token refreshed after 401, retrying location token generation');
+          try {
+            const refreshedToken = await this.refreshAccessToken(companyToken.refreshToken);
+
+            companyToken.accessToken = refreshedToken.accessToken;
+            companyToken.refreshToken = refreshedToken.refreshToken;
+            companyToken.expiresAt = new Date(Date.now() + refreshedToken.expiresIn * 1000);
+            await companyToken.save();
+
+            logger.info('✅ Company token refreshed after 401, retrying location token generation');
+          } catch (refreshErr) {
+            // Handle "invalid_grant" - refresh token was already used
+            if (refreshErr.response?.data?.error === 'invalid_grant') {
+              logger.info('Company refresh token already used, fetching latest...');
+
+              const latestToken = await OAuthToken.findOne({
+                companyId,
+                tokenType: 'company',
+                isActive: true
+              });
+
+              if (!latestToken || latestToken.accessToken === companyToken.accessToken) {
+                throw refreshErr;
+              }
+              logger.info('Using company token refreshed by another process');
+            } else {
+              throw refreshErr;
+            }
+          }
 
           // Retry ONCE
           return await this.getLocationTokenFromCompany(companyId, locationId, retryCount + 1);
@@ -242,14 +291,30 @@ class GHLService {
     // STEP 3: Refresh if needed
     if (tokenDoc.needsRefresh()) {
       logger.info('Refreshing token for location:', locationId);
-      const newToken = await this.refreshAccessToken(tokenDoc.refreshToken);
-      
-      tokenDoc.accessToken = newToken.accessToken;
-      tokenDoc.refreshToken = newToken.refreshToken;
-      tokenDoc.expiresAt = new Date(Date.now() + newToken.expiresIn * 1000);
-      await tokenDoc.save();
-      
-      logger.info('✅ Token refreshed successfully');
+
+      try {
+        const newToken = await this.refreshAccessToken(tokenDoc.refreshToken);
+
+        tokenDoc.accessToken = newToken.accessToken;
+        tokenDoc.refreshToken = newToken.refreshToken;
+        tokenDoc.expiresAt = new Date(Date.now() + newToken.expiresIn * 1000);
+        await tokenDoc.save();
+
+        logger.info('✅ Token refreshed successfully');
+      } catch (refreshErr) {
+        // Handle "invalid_grant" - refresh token was already used by another process
+        if (refreshErr.response?.data?.error === 'invalid_grant') {
+          logger.info('Refresh token already used by another process, fetching latest...');
+
+          // Re-fetch latest token from DB
+          const latestToken = await OAuthToken.findActiveToken(locationId);
+          if (latestToken && latestToken.accessToken !== tokenDoc.accessToken) {
+            logger.info('Using token refreshed by another process');
+            return latestToken.accessToken;
+          }
+        }
+        throw refreshErr;
+      }
     }
 
     return tokenDoc.accessToken;
@@ -364,32 +429,60 @@ class GHLService {
       // If 401 Unauthorized and haven't retried yet
       if (error.response?.status === 401 && retryCount === 0) {
         logger.info('🔄 Got 401, attempting token refresh and retry...');
-        
+
         try {
-          // Force refresh the token
+          // CRITICAL: Re-fetch latest token from DB to avoid race condition
+          // Another request might have already refreshed the token
           const tokenDoc = await OAuthToken.findActiveToken(locationId);
-          
+
           if (!tokenDoc || !tokenDoc.refreshToken) {
             throw new Error('No refresh token available');
           }
 
-          logger.info('Refreshing token after 401 error');
-          const newToken = await this.refreshAccessToken(tokenDoc.refreshToken);
-          
-          // Update token in database
-          tokenDoc.accessToken = newToken.accessToken;
-          tokenDoc.refreshToken = newToken.refreshToken;
-          tokenDoc.expiresAt = new Date(Date.now() + newToken.expiresIn * 1000);
-          await tokenDoc.save();
+          // Check if token was recently refreshed by another process (within last 5 minutes)
+          // If expiry is more than 23 hours away, token was just refreshed
+          const expiresIn = tokenDoc.expiresAt - Date.now();
+          if (expiresIn > 23 * 60 * 60 * 1000) {
+            logger.info('Token was recently refreshed by another process, retrying with new token');
+            return await this.apiRequest(method, endpoint, locationId, data, params, retryCount + 1);
+          }
 
-          logger.info('✅ Token refreshed, retrying API call');
+          logger.info('Refreshing token after 401 error');
+
+          try {
+            const newToken = await this.refreshAccessToken(tokenDoc.refreshToken);
+
+            // Update token in database
+            tokenDoc.accessToken = newToken.accessToken;
+            tokenDoc.refreshToken = newToken.refreshToken;
+            tokenDoc.expiresAt = new Date(Date.now() + newToken.expiresIn * 1000);
+            await tokenDoc.save();
+
+            logger.info('✅ Token refreshed, retrying API call');
+          } catch (refreshErr) {
+            // Handle "invalid_grant" - refresh token was already used by another process
+            if (refreshErr.response?.data?.error === 'invalid_grant') {
+              logger.info('Refresh token already used by another process, fetching latest...');
+
+              // Re-fetch - another process should have updated the token
+              const latestToken = await OAuthToken.findActiveToken(locationId);
+              if (latestToken && latestToken.accessToken !== tokenDoc.accessToken) {
+                logger.info('Using token refreshed by another process');
+                // Continue to retry with the new token
+              } else {
+                throw refreshErr;
+              }
+            } else {
+              throw refreshErr;
+            }
+          }
 
           // Retry the request ONCE
           return await this.apiRequest(method, endpoint, locationId, data, params, retryCount + 1);
 
         } catch (refreshError) {
           logger.error('❌ Token refresh failed:', refreshError.message);
-          
+
           // If refresh fails, throw proper error
           throw new Error('Authentication failed. Please reconnect your account.');
         }

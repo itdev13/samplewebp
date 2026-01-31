@@ -495,26 +495,72 @@ exports.handler = async (event, context) => {
 
   /**
    * Refresh token and update OAuthToken collection
+   * IMPORTANT: Re-reads token from DB to avoid race conditions with concurrent requests
+   * Refresh tokens are one-time use - if another process refreshed first, we use their result
    */
   async function refreshAndUpdateToken() {
     log('Refreshing access token...');
-    const tokenData = await refreshAccessToken(refreshToken);
-    accessToken = tokenData.accessToken;
-    refreshToken = tokenData.refreshToken;
 
-    // Update tokens in OAuthToken collection (single source of truth)
-    await db.collection('oauthtokens').updateOne(
-      { _id: oauthToken._id },
-      {
-        $set: {
-          accessToken: tokenData.accessToken,
-          refreshToken: tokenData.refreshToken,
-          expiresAt: new Date(Date.now() + 24 * 60 * 60 * 1000) // 24 hours
+    // CRITICAL: Re-read latest token from DB to avoid race condition
+    // Another Lambda or API request might have already refreshed it
+    const latestToken = await db.collection('oauthtokens').findOne({ _id: oauthToken._id });
+
+    if (!latestToken) {
+      throw new Error('OAuth token not found in database');
+    }
+
+    // Check if token was recently refreshed by another process (within last 5 minutes)
+    const fiveMinutesAgo = new Date(Date.now() - 5 * 60 * 1000);
+    if (latestToken.expiresAt > new Date(Date.now() + 23 * 60 * 60 * 1000)) {
+      // Token expires in more than 23 hours, meaning it was just refreshed
+      log('Token was recently refreshed by another process, using latest');
+      accessToken = latestToken.accessToken;
+      refreshToken = latestToken.refreshToken;
+      return accessToken;
+    }
+
+    // Use the latest refresh token from DB, not our local copy
+    const currentRefreshToken = latestToken.refreshToken;
+
+    try {
+      const tokenData = await refreshAccessToken(currentRefreshToken);
+      accessToken = tokenData.accessToken;
+      refreshToken = tokenData.refreshToken;
+
+      // Update tokens in OAuthToken collection (single source of truth)
+      await db.collection('oauthtokens').updateOne(
+        { _id: oauthToken._id },
+        {
+          $set: {
+            accessToken: tokenData.accessToken,
+            refreshToken: tokenData.refreshToken,
+            expiresAt: new Date(Date.now() + 24 * 60 * 60 * 1000) // 24 hours
+          }
+        }
+      );
+      log('Tokens refreshed and saved');
+      return accessToken;
+
+    } catch (refreshError) {
+      // Handle "invalid_grant" - refresh token was already used by another process
+      if (refreshError.response?.data?.error === 'invalid_grant') {
+        log('Refresh token already used, fetching latest from DB...');
+
+        // Re-fetch token - another process should have updated it
+        const updatedToken = await db.collection('oauthtokens').findOne({ _id: oauthToken._id });
+
+        if (updatedToken && updatedToken.accessToken !== latestToken.accessToken) {
+          // Another process did refresh successfully, use their tokens
+          accessToken = updatedToken.accessToken;
+          refreshToken = updatedToken.refreshToken;
+          log('Using token refreshed by another process');
+          return accessToken;
         }
       }
-    );
-    log('Tokens refreshed and saved');
-    return accessToken;
+
+      // Re-throw if we can't recover
+      throw refreshError;
+    }
   }
 
   try {
