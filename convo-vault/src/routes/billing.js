@@ -348,6 +348,7 @@ router.post('/charge-and-export', authenticateSession, async (req, res) => {
       // Conversation-specific filters
       query: filters?.query || null,
       id: filters?.id || null,
+      conversationId: filters?.conversationId || null,
       lastMessageType: filters?.lastMessageType || null,
       lastMessageDirection: filters?.lastMessageDirection || null,
       status: filters?.status || null,

@@ -48,6 +48,7 @@ const exportJobSchema = new mongoose.Schema({
     // Conversation-specific filters
     query: { type: String, default: null },
     id: { type: String, default: null },
+    conversationId: { type: String, default: null },
     lastMessageType: { type: String, default: null },
     lastMessageDirection: { type: String, default: null },
     status: { type: String, default: null },
