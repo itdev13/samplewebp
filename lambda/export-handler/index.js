@@ -112,10 +112,10 @@ async function fetchMessagesPage(locationId, accessToken, filters, cursor) {
 
   // Convert date filters to timestamps
   if (params.startDate) {
-    params.startDate = new Date(params.startDate).getTime();
+    params.startDate = new Date(params.startDate);
   }
   if (params.endDate) {
-    params.endDate = new Date(params.endDate).getTime();
+    params.endDate = new Date(params.endDate);
   }
 
   if (cursor) {
