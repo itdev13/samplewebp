@@ -26,6 +26,9 @@ apiClient.interceptors.request.use(
   }
 );
 
+// Session expired event - components can listen for this
+export const SESSION_EXPIRED_EVENT = 'session:expired';
+
 // Response interceptor - Handle errors
 apiClient.interceptors.response.use(
   (response) => response.data,
@@ -34,6 +37,13 @@ apiClient.interceptors.response.use(
     if (error.response?.status === 401 && !error.config.url.includes('/auth/verify')) {
       // Unauthorized - clear session (only for non-verify endpoints)
       localStorage.removeItem('sessionToken');
+
+      // Check if it's a session token expiration (not GHL token)
+      const errorCode = error.response?.data?.code;
+      if (errorCode === 'TOKEN_EXPIRED') {
+        // Dispatch event for AuthContext to handle
+        window.dispatchEvent(new CustomEvent(SESSION_EXPIRED_EVENT));
+      }
     }
     
     // Extract comprehensive error message from backend

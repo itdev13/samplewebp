@@ -1,6 +1,7 @@
-import React, { createContext, useContext, useState, useEffect, useRef } from 'react';
+import React, { createContext, useContext, useState, useEffect, useRef, useCallback } from 'react';
 import { useGHLContext } from '../hooks/useGHLContext';
 import { authAPI } from '../api/auth';
+import { SESSION_EXPIRED_EVENT } from '../api/client';
 
 const AuthContext = createContext(null);
 
@@ -122,12 +123,30 @@ export const AuthProvider = ({ children }) => {
     }
   };
 
-  const logout = () => {
+  const logout = useCallback(() => {
     localStorage.removeItem('sessionToken');
     setSession(null);
     setLocation(null);
     console.log('[logout] Session and location cleared');
-  };
+  }, []);
+
+  // Listen for session expired events from API client
+  useEffect(() => {
+    const handleSessionExpired = () => {
+      console.log('[AuthContext] Session expired event received - re-authenticating');
+      // Reset attempt counter to allow re-authentication
+      authAttemptCount.current = 0;
+      // Clear current session
+      setSession(null);
+      // Trigger re-authentication if we have GHL context
+      if (ghlContext) {
+        authenticateUser(ghlContext);
+      }
+    };
+
+    window.addEventListener(SESSION_EXPIRED_EVENT, handleSessionExpired);
+    return () => window.removeEventListener(SESSION_EXPIRED_EVENT, handleSessionExpired);
+  }, [ghlContext]);
 
   const value = {
     ghlContext,
