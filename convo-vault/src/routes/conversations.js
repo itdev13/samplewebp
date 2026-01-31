@@ -89,7 +89,7 @@ router.get('/download', authenticateSession, async (req, res) => {
       }
     }
 
-    if(conversationId){
+    if(id){
       filters.id = id;
     }
 
