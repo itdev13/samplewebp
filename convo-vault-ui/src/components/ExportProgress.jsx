@@ -155,12 +155,12 @@ export default function ExportProgress({ job, onDownload, onRefresh }) {
       )}
 
       {/* Billing Info */}
-      {job.billing && (
+      {/* {job.billing && (
         <div className="mt-3 pt-3 border-t border-gray-100 flex justify-between items-center text-xs text-gray-500">
           <span>Amount Charged</span>
           <span className="font-medium text-gray-700">${job.billing.amount}</span>
         </div>
-      )}
+      )} */}
 
       {/* Refresh Button (for non-completed jobs) */}
       {onRefresh && ['pending', 'processing'].includes(job.status) && (

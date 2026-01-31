@@ -488,8 +488,8 @@ router.get('/export-status/:jobId', authenticateSession, async (req, res) => {
         startedAt: job.startedAt,
         completedAt: job.completedAt,
         createdAt: job.createdAt,
-        billing: job.billingTransactionId ? {
-          amount: (job.billingTransactionId.pricing.finalAmount / 100).toFixed(2),
+        billing: job.billingTransactionId?.pricing?.finalAmount ? {
+          amount: job.billingTransactionId.pricing.finalAmount,
           status: job.billingTransactionId.status
         } : null
       }
@@ -554,7 +554,7 @@ router.get('/export-history', authenticateSession, async (req, res) => {
           completedAt: job.completedAt,
           filters: job.filters || {},
           errorMessage: job.errorMessage,
-          billing: job.billingTransactionId ? {
+          billing: job.billingTransactionId?.pricing?.finalAmount ? {
             amount: (job.billingTransactionId.pricing.finalAmount / 100).toFixed(2)
           } : null
         }))
