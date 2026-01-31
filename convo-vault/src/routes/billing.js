@@ -87,7 +87,7 @@ router.post('/estimate', authenticateSession, async (req, res) => {
 
     let counts = {
       conversations: 0,
-      smsMessages: 0,
+    smsMessages: 0,
       emailMessages: 0
     };
 

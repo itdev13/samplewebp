@@ -19,7 +19,7 @@ export default function ConversationsTab({ onSelectConversation }) {
     startDate: '',
     endDate: '',
     query: '',  // Universal search across multiple fields
-    conversationId: '',
+    id: '',
     contactId: '',  // Filter by specific contact
     lastMessageType: '',
     lastMessageDirection: '',
@@ -129,7 +129,7 @@ export default function ConversationsTab({ onSelectConversation }) {
         startDate: filters.startDate ? dayjs(filters.startDate).startOf('day').valueOf() : undefined,
         endDate: filters.endDate ? dayjs(filters.endDate).endOf('day').valueOf() : undefined,
         contactId: filters.contactId || undefined,
-        conversationId: filters.conversationId || undefined,
+        id: filters.id || undefined,
         query: filters.query || undefined,
         lastMessageType: filters.lastMessageType || undefined,
         lastMessageDirection: filters.lastMessageDirection || undefined,
@@ -162,7 +162,7 @@ export default function ConversationsTab({ onSelectConversation }) {
         startDate: filters.startDate ? dayjs(filters.startDate).startOf('day').valueOf() : undefined,
         endDate: filters.endDate ? dayjs(filters.endDate).endOf('day').valueOf() : undefined,
         contactId: filters.contactId || undefined,
-        conversationId: filters.conversationId || undefined,
+        id: filters.id || undefined,
         query: filters.query || undefined,
         lastMessageType: filters.lastMessageType || undefined,
         lastMessageDirection: filters.lastMessageDirection || undefined,
@@ -314,8 +314,8 @@ export default function ConversationsTab({ onSelectConversation }) {
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">Conversation ID</label>
             <Input
-              value={filters.conversationId}
-              onChange={(e) => setFilters({ ...filters, conversationId: e.target.value })}
+              value={filters.id}
+              onChange={(e) => setFilters({ ...filters, id: e.target.value })}
               placeholder="Filter by conversation ID"
               size="large"
             />
