@@ -134,7 +134,7 @@ router.get('/callback', async (req, res) => {
       }
 
       logger.info('✅ OAuth successful for company:', tokenData.companyId);
-      var displayName = `${locations.length} sub-account(s)`;
+      var displayName = `${locations.length} account(s)`;
       var successMessage = `Company installed with ${displayName}`;
     }
 
@@ -243,7 +243,7 @@ router.get('/callback', async (req, res) => {
           </div>
           <div style="background: #FEF3C7; padding: 15px; border-radius: 8px; margin-top: 25px; border-left: 4px solid #F59E0B;">
             <p style="color: #92400E; font-size: 13px; font-weight: 600; margin: 0;">
-              ✓ Installation Complete! Close this window and find ConvoVault in your sub-account's left menu.
+              ✓ Installation Complete! Close this window and find ConvoVault in your account's left menu.
             </p>
           </div>
           
@@ -362,7 +362,7 @@ router.get('/callback', async (req, res) => {
             </div>
             
             <div class="tip">
-              <p>💡 ConvoVault appears as a new menu item in your sub-account navigation</p>
+              <p>💡 ConvoVault appears as a new menu item in your account navigation</p>
             </div>
             
             <div style="margin-top: 25px; padding-top: 20px; border-top: 1px solid #E5E7EB;">
