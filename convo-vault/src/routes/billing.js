@@ -555,7 +555,7 @@ router.get('/export-history', authenticateSession, async (req, res) => {
           filters: job.filters || {},
           errorMessage: job.errorMessage,
           billing: job.billingTransactionId?.pricing?.finalAmount ? {
-            amount: (job.billingTransactionId.pricing.finalAmount / 100).toFixed(2)
+            amount: job.billingTransactionId.pricing.finalAmount
           } : null
         }))
       }
