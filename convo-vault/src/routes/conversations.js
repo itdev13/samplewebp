@@ -23,7 +23,7 @@ router.get('/download', authenticateSession, async (req, res) => {
       query,  // Universal search across multiple fields
       startDate, 
       endDate,
-      conversationId,
+      id,
       contactId,  // Filter by specific contact
       lastMessageType,
       lastMessageDirection,
@@ -90,7 +90,7 @@ router.get('/download', authenticateSession, async (req, res) => {
     }
 
     if(conversationId){
-      filters.id = conversationId;
+      filters.id = id;
     }
 
     logger.info('📤 Filters being sent to GHL API', { filters });
