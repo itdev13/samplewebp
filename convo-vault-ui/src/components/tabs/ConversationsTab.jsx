@@ -124,10 +124,18 @@ export default function ConversationsTab({ onSelectConversation }) {
     setEstimateError(null);
 
     try {
+      // Build export filters with all conversation filter options
       const exportFilters = {
         startDate: filters.startDate ? dayjs(filters.startDate).startOf('day').valueOf() : undefined,
         endDate: filters.endDate ? dayjs(filters.endDate).endOf('day').valueOf() : undefined,
-        contactId: filters.contactId || undefined
+        contactId: filters.contactId || undefined,
+        conversationId: filters.conversationId || undefined,
+        query: filters.query || undefined,
+        lastMessageType: filters.lastMessageType || undefined,
+        lastMessageDirection: filters.lastMessageDirection || undefined,
+        status: filters.status || undefined,
+        lastMessageAction: filters.lastMessageAction || undefined,
+        sortBy: filters.sortBy || undefined
       };
 
       const response = await billingAPI.getEstimate(location.id, 'conversations', exportFilters);
@@ -149,10 +157,18 @@ export default function ConversationsTab({ onSelectConversation }) {
     setEstimateError(null);
 
     try {
+      // Build export filters with all conversation filter options
       const exportFilters = {
         startDate: filters.startDate ? dayjs(filters.startDate).startOf('day').valueOf() : undefined,
         endDate: filters.endDate ? dayjs(filters.endDate).endOf('day').valueOf() : undefined,
-        contactId: filters.contactId || undefined
+        contactId: filters.contactId || undefined,
+        conversationId: filters.conversationId || undefined,
+        query: filters.query || undefined,
+        lastMessageType: filters.lastMessageType || undefined,
+        lastMessageDirection: filters.lastMessageDirection || undefined,
+        status: filters.status || undefined,
+        lastMessageAction: filters.lastMessageAction || undefined,
+        sortBy: filters.sortBy || undefined
       };
 
       const response = await billingAPI.chargeAndExport(

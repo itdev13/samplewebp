@@ -38,12 +38,21 @@ const exportJobSchema = new mongoose.Schema({
     default: 'csv'
   },
 
-  // Export filters
+  // Export filters (supports both messages and conversations)
   filters: {
+    // Common filters
     channel: { type: String, default: null },
     startDate: { type: Date, default: null },
     endDate: { type: Date, default: null },
-    contactId: { type: String, default: null }
+    contactId: { type: String, default: null },
+    // Conversation-specific filters
+    query: { type: String, default: null },
+    conversationId: { type: String, default: null },
+    lastMessageType: { type: String, default: null },
+    lastMessageDirection: { type: String, default: null },
+    status: { type: String, default: null },
+    lastMessageAction: { type: String, default: null },
+    sortBy: { type: String, default: null }
   },
 
   // Progress tracking

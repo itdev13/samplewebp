@@ -43,6 +43,7 @@ export default function ExportTab() {
     if (!filters) return [];
     const applied = [];
 
+    // Common filters
     if (filters.channel) {
       applied.push({ label: 'Channel', value: filters.channel });
     }
@@ -54,6 +55,25 @@ export default function ExportTab() {
     }
     if (filters.contactId) {
       applied.push({ label: 'Contact', value: filters.contactId.substring(0, 8) + '...' });
+    }
+    // Conversation-specific filters
+    if (filters.query) {
+      applied.push({ label: 'Search', value: filters.query.substring(0, 20) + (filters.query.length > 20 ? '...' : '') });
+    }
+    if (filters.conversationId) {
+      applied.push({ label: 'Conversation', value: filters.conversationId.substring(0, 8) + '...' });
+    }
+    if (filters.lastMessageType) {
+      applied.push({ label: 'Type', value: filters.lastMessageType });
+    }
+    if (filters.lastMessageDirection) {
+      applied.push({ label: 'Direction', value: filters.lastMessageDirection });
+    }
+    if (filters.status) {
+      applied.push({ label: 'Status', value: filters.status });
+    }
+    if (filters.lastMessageAction) {
+      applied.push({ label: 'Action', value: filters.lastMessageAction });
     }
 
     return applied;

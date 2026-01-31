@@ -338,18 +338,30 @@ router.post('/charge-and-export', authenticateSession, async (req, res) => {
     }
 
     // Step 8: Create export job (Lambda will fetch tokens from OAuthToken collection)
+    // Build filters object with all supported filter types
+    const jobFilters = {
+      // Common filters
+      channel: filters?.channel || null,
+      startDate: filters?.startDate ? new Date(filters.startDate) : null,
+      endDate: filters?.endDate ? new Date(filters.endDate) : null,
+      contactId: filters?.contactId || null,
+      // Conversation-specific filters
+      query: filters?.query || null,
+      conversationId: filters?.conversationId || null,
+      lastMessageType: filters?.lastMessageType || null,
+      lastMessageDirection: filters?.lastMessageDirection || null,
+      status: filters?.status || null,
+      lastMessageAction: filters?.lastMessageAction || null,
+      sortBy: filters?.sortBy || null
+    };
+
     const exportJob = await ExportJob.create({
       locationId,
       companyId,
       billingTransactionId: transaction._id,
       exportType,
       format: format || 'csv',
-      filters: {
-        channel: filters?.channel || null,
-        startDate: filters?.startDate ? new Date(filters.startDate) : null,
-        endDate: filters?.endDate ? new Date(filters.endDate) : null,
-        contactId: filters?.contactId || null
-      },
+      filters: jobFilters,
       totalItems,
       status: 'pending',
       notificationEmail: notificationEmail || null,
