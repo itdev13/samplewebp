@@ -77,12 +77,16 @@ async function fetchConversationsPage(locationId, accessToken, filters, skip) {
     ...filters
   };
 
-  // Convert date filters to timestamps
+  // Convert date filters to timestamps (start of day / end of day)
   if (params.startDate) {
-    params.startDate = new Date(params.startDate).getTime();
+    const date = new Date(params.startDate);
+    date.setHours(0, 0, 0, 0); // 12:00 AM
+    params.startDate = date.getTime();
   }
   if (params.endDate) {
-    params.endDate = new Date(params.endDate).getTime();
+    const date = new Date(params.endDate);
+    date.setHours(23, 59, 59, 999); // 11:59 PM
+    params.endDate = date.getTime();
   }
 
   const response = await axios.get(`${GHL_API_URL}/conversations/search`, {
@@ -110,12 +114,16 @@ async function fetchMessagesPage(locationId, accessToken, filters, cursor) {
     ...filters
   };
 
-  // Convert date filters to timestamps
+  // Convert date filters to timestamps (start of day / end of day)
   if (params.startDate) {
-    params.startDate = new Date(params.startDate);
+    const date = new Date(params.startDate);
+    date.setHours(0, 0, 0, 0); // 12:00 AM
+    params.startDate = date.getTime();
   }
   if (params.endDate) {
-    params.endDate = new Date(params.endDate);
+    const date = new Date(params.endDate);
+    date.setHours(23, 59, 59, 999); // 11:59 PM
+    params.endDate = date.getTime();
   }
 
   if (cursor) {

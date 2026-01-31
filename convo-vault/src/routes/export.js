@@ -65,8 +65,16 @@ router.get('/messages', authenticateSession, async (req, res) => {
     // Build export options
     const options = { limit: sanitizedLimit };
     if (channel) options.channel = channel;
-    if (startDate) options.startDate = new Date(startDate).getTime();
-    if (endDate) options.endDate = new Date(endDate).getTime();
+    if (startDate) {
+      const start = new Date(startDate);
+      start.setHours(0, 0, 0, 0); // 12:00 AM
+      options.startDate = start.getTime();
+    }
+    if (endDate) {
+      const end = new Date(endDate);
+      end.setHours(23, 59, 59, 999); // 11:59 PM
+      options.endDate = end.getTime();
+    }
     if (contactId) options.contactId = contactId;
     if (conversationId) options.conversationId = conversationId; // Add conversationId filter
     if (cursor) options.cursor = cursor;
