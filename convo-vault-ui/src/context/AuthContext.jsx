@@ -23,7 +23,6 @@ export const AuthProvider = ({ children }) => {
 
   // Authenticate with backend when user context is available (MAX 3 ATTEMPTS)
   useEffect(() => {
-
     if (ghlContext && !session && authAttemptCount.current < maxAttempts) {
       console.log('[AuthProvider useEffect] Conditions met - starting authentication');
       authenticateUser(ghlContext);
@@ -34,7 +33,11 @@ export const AuthProvider = ({ children }) => {
       if (!error) {
         setError('Maximum authentication attempts reached. Please refresh the page.');
       }
-    } 
+    } else {
+      console.log('[AuthProvider useEffect] Skipping auth:', {
+        reason: !ghlContext ? 'no ghlContext' : session ? 'already has session' : 'max attempts reached'
+      });
+    }
   }, [ghlContext]);
 
   const authenticateUser = async (ghlContext) => {
@@ -42,9 +45,16 @@ export const AuthProvider = ({ children }) => {
     authAttemptCount.current += 1;
     const attemptNum = authAttemptCount.current;
 
+    console.log('[authenticateUser] Starting attempt', attemptNum, 'of', maxAttempts);
+    console.log('[authenticateUser] GHL Context:', {
+      locationId: ghlContext.locationId,
+      companyId: ghlContext.companyId,
+      userId: ghlContext.userId
+    });
 
     // Check if we've exceeded max attempts
     if (attemptNum > maxAttempts) {
+      console.error('[authenticateUser] Exceeded max attempts');
       setError('Maximum authentication attempts reached. Please refresh the page.');
       setLoading(false);
       return;
@@ -52,33 +62,41 @@ export const AuthProvider = ({ children }) => {
 
     try {
       setLoading(true);
-      
+      console.log('[authenticateUser] Calling authAPI.verify...');
+
       const response = await authAPI.verify({
         locationId: ghlContext.locationId,
         companyId: ghlContext.companyId,
         userId: ghlContext.userId
       });
 
-
       // Success! Store session token
       localStorage.setItem('sessionToken', response.sessionToken);
-      
+      console.log('[authenticateUser] Session token stored in localStorage');
+
       setSession({
         token: response.sessionToken,
         user: response.user,
         locationId: response.location.id
       });
-      
+      console.log('[authenticateUser] setSession called');
+
       setLocation(response.location);
+      console.log('[authenticateUser] setLocation called');
+
       setError(null);
-      
+
       // PROACTIVE TOKEN VALIDATION: Verify token health immediately
+      console.log('[authenticateUser] Starting proactive token validation...');
       try {
         await authAPI.getSession();
+        console.log('[authenticateUser] Token validation SUCCESS');
       } catch (validationError) {
         // Check if it's a token expiration error
         const errorMsg = validationError.message || '';
-        if (errorMsg.includes('token expired') || 
+        console.error('[authenticateUser] Token validation FAILED:', errorMsg);
+
+        if (errorMsg.includes('token expired') ||
             errorMsg.includes('authentication has expired') ||
             errorMsg.includes('Please reconnect') ||
             errorMsg.includes('Company token expired')) {
@@ -90,20 +108,26 @@ export const AuthProvider = ({ children }) => {
         // Non-critical validation errors - continue anyway
         console.warn('[authenticateUser] Token validation warning (non-critical):', errorMsg);
       }
-      
+
       setLoading(false);
-      console.log('[authenticateUser] Session and location state updated successfully');
-      
+      console.log('[authenticateUser] COMPLETE - Session and location state updated successfully');
+
     } catch (err) {
       // Extract error message from various possible locations
       const errorMessage = err.details || err.message || 'Authentication failed';
-      console.error('[authenticateUser] Authentication failed:', errorMessage);
-      
+      console.error('[authenticateUser] Authentication FAILED:', {
+        message: errorMessage,
+        details: err.details,
+        status: err.status,
+        fullError: err
+      });
+
       setError(errorMessage);
       setLoading(false);
-      
+
       // Stop all future attempts
       authAttemptCount.current = maxAttempts;
+      console.log('[authenticateUser] Set authAttemptCount to maxAttempts to prevent further attempts');
     }
   };
 
@@ -129,13 +153,17 @@ export const AuthProvider = ({ children }) => {
     console.log('[logout] Session and location cleared');
   };
 
+  const combinedLoading = ghlLoading || loading;
+  const combinedError = ghlError || error;
+  const isAuthenticated = !!session;
+
   const value = {
     ghlContext,
     session,
     location,
-    loading: ghlLoading || loading,
-    error: ghlError || error,
-    isAuthenticated: !!session,
+    loading: combinedLoading,
+    error: combinedError,
+    isAuthenticated,
     refreshSession,
     logout
   };

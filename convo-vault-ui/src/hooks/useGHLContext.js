@@ -19,37 +19,38 @@ export const useGHLContext = () => {
     
     // Skip if already resolved (prevents React StrictMode double-run)
     if (resolvedRef.current) {
-      console.log('⏭️ Skipping - already resolved');
+      console.log('[useGHLContext] ⏭️ Skipping - already resolved');
       return;
     }
-    
+
     const initGHL = async () => {
+      console.log('[useGHLContext initGHL] Starting initialization...');
+
       try {
         // Initialize user context
         const getUserContext = async () => {
           return new Promise((resolve, reject) => {
             let localTimeoutId;
-            
+
             messageHandler = ({ data, origin }) => {
-              // Verify origin
-              // if (!origin.includes('gohighlevel.com') && !origin.includes('leadconnectorhq.com')) {
-              //   return;
-              // }
+              console.log('[useGHLContext] Message received:', { message: data.message, origin });
 
               // Response with encrypted user data
               if (data.message === 'REQUEST_USER_DATA_RESPONSE' && !resolvedRef.current) {
+                console.log('[useGHLContext] Got REQUEST_USER_DATA_RESPONSE, processing...');
                 // Clear timeout immediately!
                 if (localTimeoutId) {
                   clearTimeout(localTimeoutId);
                 }
                 resolvedRef.current = true;
-                
+
                 // Production backend on AWS ALB
                 const decryptUrl = `${API_BASE_URL}/api/auth/decrypt-user-data`;
-                
+                console.log('[useGHLContext] Calling decrypt URL:', decryptUrl);
+
                 fetch(decryptUrl, {
                   method: 'POST',
-                  headers: { 
+                  headers: {
                     'Content-Type': 'application/json',
                     'Accept': 'application/json'
                   },
@@ -57,24 +58,33 @@ export const useGHLContext = () => {
                   body: JSON.stringify({ encryptedData: data.payload })
                 })
                 .then(res => {
+                  console.log('[useGHLContext] Decrypt response status:', res.status);
                   if (!res.ok) throw new Error(`Authentication failed`);
                   return res.json();
                 })
                 .then(userData => {
+                  console.log('[useGHLContext] Decrypted user data:', {
+                    locationId: userData.activeLocation || userData.locationId,
+                    companyId: userData.companyId,
+                    userId: userData.userId
+                  });
                   resolve(userData);
                 })
                 .catch(err => {
+                  console.error('[useGHLContext] Decrypt error:', err.message);
                   reject(err);
                 });
           }
         };
 
             window.addEventListener('message', messageHandler);
-        
+
             // Request user data from parent
         if (window.parent !== window) {
+              console.log('[useGHLContext] Posting REQUEST_USER_DATA to parent...');
               window.parent.postMessage({ message: 'REQUEST_USER_DATA' }, '*');
             } else {
+              console.log('[useGHLContext] NOT in iframe - rejecting');
               reject(new Error('Not in iframe'));
               return;
         }
@@ -82,6 +92,7 @@ export const useGHLContext = () => {
             // Timeout after 3 seconds (only if not resolved)
             localTimeoutId = setTimeout(() => {
               if (!resolvedRef.current) {
+                console.log('[useGHLContext] TIMEOUT - no response from parent after 3s');
                 reject(new Error('Authentication timeout'));
               }
             }, 3000);
@@ -90,8 +101,10 @@ export const useGHLContext = () => {
 
         // Try to get user context
         try {
+          console.log('[useGHLContext] Calling getUserContext...');
           const userData = await getUserContext();
-          
+          console.log('[useGHLContext] getUserContext SUCCESS');
+
           const ctx = {
             locationId: userData.activeLocation || userData.locationId,
             companyId: userData.companyId,
@@ -102,13 +115,16 @@ export const useGHLContext = () => {
             type: userData.type || (userData.activeLocation ? 'Location' : 'Agency')
           };
 
+          console.log('[useGHLContext] Setting context:', ctx);
           setContext(ctx);
           setLoading(false);
 
         } catch (err) {
+          console.error('[useGHLContext] getUserContext FAILED:', err.message);
 
           // Check if max attempts reached
           if (err.message === 'MAX_ATTEMPTS_REACHED' || attemptCountRef.current >= MAX_ATTEMPTS) {
+            console.log('[useGHLContext] Max attempts reached, setting INSTALL_REQUIRED');
             setError('INSTALL_REQUIRED');
             setLoading(false);
           return;
@@ -120,7 +136,14 @@ export const useGHLContext = () => {
           const urlUserId = params.get('user_id') || params.get('userId');
           const urlCompanyId = params.get('company_id') || params.get('companyId');
 
+          console.log('[useGHLContext] Checking URL params fallback:', {
+            urlLocationId,
+            urlUserId,
+            urlCompanyId
+          });
+
           if (urlLocationId && urlUserId) {
+            console.log('[useGHLContext] Using URL params as fallback');
                 setContext({
               locationId: urlLocationId,
               companyId: urlCompanyId || 'unknown',
@@ -130,11 +153,13 @@ export const useGHLContext = () => {
                 setLoading(false);
           } else {
             // No context available - redirect to about page on FRONTEND
+            console.log('[useGHLContext] ⚠️ NO CONTEXT AVAILABLE - REDIRECTING TO ABOUT PAGE');
+            console.log('[useGHLContext] Redirect URL:', `${FRONTEND_URL}/about.html`);
             window.location.href = `${FRONTEND_URL}/about.html`;
           }
         }
       } catch (err) {
-        console.error('❌ GHL Context Error:', err.message || 'Context initialization failed');
+        console.error('[useGHLContext] ❌ GHL Context Error:', err.message || 'Context initialization failed');
         setError(err.message || 'Context initialization failed');
         setLoading(false);
       }

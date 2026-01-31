@@ -6,7 +6,7 @@ import ErrorScreen from './components/ErrorScreen';
 
 function AppContent() {
   const { loading, error, isAuthenticated } = useAuth();
-
+  console.log("details: ", loading, error, isAuthenticated)
   if (loading) {
     return <LoadingScreen />;
   }
