@@ -347,7 +347,7 @@ router.post('/charge-and-export', authenticateSession, async (req, res) => {
       contactId: filters?.contactId || null,
       // Conversation-specific filters
       query: filters?.query || null,
-      conversationId: filters?.conversationId || null,
+      id: filters?.id || null,
       lastMessageType: filters?.lastMessageType || null,
       lastMessageDirection: filters?.lastMessageDirection || null,
       status: filters?.status || null,
