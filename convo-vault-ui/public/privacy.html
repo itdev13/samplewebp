@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>ConvoVault - Privacy Policy</title>
+  <title>Export Messages - Privacy Policy</title>
   <style>
     * {
       margin: 0;
@@ -117,7 +117,7 @@
   <div class="container">
     <div class="header">
       <h1>🔒 Privacy Policy</h1>
-      <p style="color: white;">How ConvoVault protects your data</p>
+      <p style="color: white;">How Export Messages protects your data</p>
     </div>
 
     <div class="content">
@@ -129,7 +129,7 @@
       <section class="section">
         <h2>1. Introduction</h2>
         <p>
-          At ConvoVault, we take your privacy seriously. This Privacy Policy explains how we collect, use, disclose, and safeguard your information when you use our conversation management application.
+          At Export Messages, we take your privacy seriously. This Privacy Policy explains how we collect, use, disclose, and safeguard your information when you use our data export application.
         </p>
         <div class="highlight-box">
           <strong>In Short:</strong> We only access your conversation data to provide the Service. We don't store your messages permanently or share them with third parties.
@@ -149,16 +149,16 @@
 
         <h3>2.2 Usage Data</h3>
         <ul>
-          <li>API requests and access logs</li>
+          <li>Export history and transaction records</li>
           <li>Feature usage statistics</li>
           <li>Error logs for debugging</li>
         </ul>
 
         <h3>2.3 Conversation Data (Temporary)</h3>
         <ul>
-          <li>Conversation metadata during search operations</li>
-          <li>Message content during export operations (deleted after export)</li>
-          <li>Uploaded CSV/Excel files during import (deleted after processing)</li>
+          <li>Conversation metadata during export operations</li>
+          <li>Message content during export (stored temporarily in S3)</li>
+          <li>Export files (deleted after 30 days)</li>
         </ul>
 
         <h3>2.4 Support Communications</h3>
@@ -190,21 +190,21 @@
         <h3>4.1 What We Store Permanently</h3>
         <ul>
           <li>OAuth tokens (encrypted)</li>
-          <li>Import job history (metadata only, no message content)</li>
+          <li>Export job history (metadata only, no message content)</li>
+          <li>Billing transaction records</li>
           <li>Installation records</li>
           <li>Support ticket history</li>
         </ul>
 
-        <h3>4.2 What We Don't Store</h3>
+        <h3>4.2 What We Don't Store Permanently</h3>
         <ul>
           <li>Your conversation messages (temporary only)</li>
-          <li>Contact information from imports (processed and discarded)</li>
-          <li>Exported data (generated on-demand)</li>
+          <li>Export files (deleted after 30 days)</li>
         </ul>
 
         <h3>4.3 Temporary Data</h3>
         <p>
-          Conversation and message data accessed during search/export operations is cached temporarily and automatically deleted within 24 hours.
+          Export files are stored in AWS S3 for 30 days to allow re-downloads. Download links expire after 7 days but can be regenerated.
         </p>
       </section>
 
@@ -312,11 +312,11 @@
     </div>
 
     <div class="footer">
-      <p style="color: white;">&copy; 2026 ConvoVault. All rights reserved.</p>
+      <p style="color: white;">&copy; 2026 Export Messages. All rights reserved.</p>
       <p style="margin-top: 10px;">
-        <a href="/about.html">Home</a> · 
-        <a href="/setup.html">Documentation</a> · 
-        <a href="/support.html">Support</a> · 
+        <a href="/about.html">Home</a> ·
+        <a href="/setup.html">Documentation</a> ·
+        <a href="/support.html">Support</a> ·
         <a href="/terms.html">Terms</a>
       </p>
     </div>

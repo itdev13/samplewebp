@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>ConvoVault - Support</title>
+  <title>Export Messages - Support</title>
   <style>
     * {
       margin: 0;
@@ -130,8 +130,8 @@
 <body>
   <div class="container">
     <div class="header">
-      <h1>🆘 ConvoVault Support</h1>
-      <p>We're here to help you get the most out of ConvoVault</p>
+      <h1>🆘 Export Messages Support</h1>
+      <p>We're here to help you get the most out of Export Messages</p>
     </div>
 
     <div class="content">
@@ -160,7 +160,7 @@
             <div class="icon">💬</div>
             <h3>In-App Support</h3>
             <p style="margin: 10px 0;">Submit tickets with screenshots</p>
-            <a href="/">Open ConvoVault</a>
+            <a href="/">Open Export Messages</a>
             <p style="margin-top: 10px; font-size: 14px; color: #718096;">Fastest response</p>
           </div>
         </div>
@@ -178,30 +178,30 @@
         </div>
 
         <div class="faq">
-          <h3>Import failed - file format error</h3>
-          <p>
-            <strong>Solution:</strong> Download the CSV template from the Import tab and ensure your file matches the format. Required fields: contactId or email/phone, and message.
-          </p>
-        </div>
-
-        <div class="faq">
           <h3>Export returns no results</h3>
           <p>
-            <strong>Solution:</strong> Check your filters - try expanding the date range or removing optional filters. Ensure the conversation ID is correct.
+            <strong>Solution:</strong> Check your filters - try expanding the date range (max 1 month) or removing optional filters.
           </p>
         </div>
 
         <div class="faq">
-          <h3>API authentication failing</h3>
+          <h3>Date range exceeds limit</h3>
           <p>
-            <strong>Solution:</strong> Your session token may have expired. Refresh the app to get a new token, or use the /api/auth/refresh endpoint.
+            <strong>Solution:</strong> Exports are limited to 1 month date range. Select a shorter period and run multiple exports if needed.
           </p>
         </div>
 
         <div class="faq">
-          <h3>File upload size limit exceeded</h3>
+          <h3>Download link expired</h3>
           <p>
-            <strong>Solution:</strong> Maximum file size is 5MB or 2,000 contacts per import. Split your CSV into smaller files if needed.
+            <strong>Solution:</strong> Download links are valid for 7 days. Go to the Exports tab and click "Regenerate Link" to get a new download URL.
+          </p>
+        </div>
+
+        <div class="faq">
+          <h3>Payment failed</h3>
+          <p>
+            <strong>Solution:</strong> Check that your payment method is valid. Contact support if the issue persists.
           </p>
         </div>
       </section>
@@ -210,72 +210,67 @@
       <section class="section">
         <h2>📚 Feature Documentation</h2>
 
-        <h3>Advanced Filtering</h3>
-        <p>ConvoVault supports 8+ filter parameters:</p>
+        <h3>Export Filters</h3>
+        <p>Export Messages supports multiple filter parameters:</p>
         <ul>
-          <li><code>status</code> - Filter by conversation status (active, archived)</li>
-          <li><code>lastMessageType</code> - Filter by message type (SMS, Email, WhatsApp)</li>
-          <li><code>lastMessageDirection</code> - Filter by direction (inbound, outbound)</li>
-          <li><code>limit</code> - Number of results (20, 50, 100)</li>
-          <li><code>conversationId</code> - Get specific conversation</li>
+          <li><code>Date Range</code> - Filter by start and end date (max 1 month)</li>
+          <li><code>Channel</code> - Filter by SMS, Email, WhatsApp, etc.</li>
+          <li><code>Status</code> - Filter by conversation status</li>
+          <li><code>Direction</code> - Filter by inbound or outbound messages</li>
+          <li><code>Contact ID</code> - Export for a specific contact</li>
         </ul>
 
-        <h3>CSV Import Format</h3>
-        <p>Required columns:</p>
+        <h3>Pricing & Volume Discounts</h3>
+        <p>Base price: $0.0025 per item</p>
         <ul>
-          <li><code>contactId</code> OR (<code>email</code>/<code>phone</code>)</li>
-          <li><code>message</code> - The message text</li>
+          <li><code>10,000+ items</code> - 20% discount</li>
+          <li><code>50,000+ items</code> - 40% discount</li>
+          <li><code>100,000+ items</code> - 60% discount</li>
         </ul>
-        <p>Optional columns:</p>
-        <ul>
-          <li><code>locationId</code> - Sub-account ID (uses current if not provided)</li>
-          <li><code>Name</code> - Contact details</li>
-        </ul>
+        <p>Volume discounts are applied automatically at checkout.</p>
 
-        <h3>API Integration</h3>
-        <p>Access the API documentation from within the app:</p>
-        <ol>
-          <li>Click <strong>📚 API Docs</strong> in the header</li>
-          <li>Your personal API token will be displayed</li>
-          <li>Copy the token for use in your applications</li>
-          <li>Follow the documented examples for each endpoint</li>
-        </ol>
+        <h3>Export Formats</h3>
+        <p>Supported export formats:</p>
+        <ul>
+          <li><code>CSV</code> - Comma-separated values, compatible with Excel and Google Sheets</li>
+          <li><code>JSON</code> - JavaScript Object Notation, ideal for developers and data processing</li>
+        </ul>
       </section>
 
       <!-- Video Tutorials -->
       <section class="section">
         <h2>🎥 Video Tutorials</h2>
         <p style="margin-bottom: 20px;">
-          Watch our comprehensive product overview video to learn how to use all features of ConvoVault:
+          Watch our comprehensive product overview video to learn how to use Export Messages:
         </p>
-        
+
         <!-- YouTube Video Embed -->
         <div style="position: relative; padding-bottom: 56.25%; height: 0; overflow: hidden; border-radius: 12px; box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1); margin-bottom: 20px;">
-          <iframe 
-            style="position: absolute; top: 0; left: 0; width: 100%; height: 100%;" 
-            src="https://www.youtube.com/embed/2YxEKvGYNWQ" 
-            title="ConvoVault Product Overview" 
-            frameborder="0" 
-            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" 
+          <iframe
+            style="position: absolute; top: 0; left: 0; width: 100%; height: 100%;"
+            src="https://www.youtube.com/embed/2YxEKvGYNWQ"
+            title="Export Messages Product Overview"
+            frameborder="0"
+            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
             allowfullscreen>
           </iframe>
         </div>
-        
+
         <p style="text-align: center;">
           <a href="https://youtu.be/2YxEKvGYNWQ" target="_blank" style="color: #667eea; text-decoration: none; font-weight: 600;">
             🔗 Watch on YouTube →
           </a>
         </p>
-        
+
         <div style="background: #edf2f7; padding: 16px; border-radius: 8px; margin-top: 20px;">
           <h4 style="margin-bottom: 10px; color: #2d3748;">📖 What's Covered:</h4>
           <ul style="color: #4a5568; line-height: 1.8;">
             <li>Complete dashboard walkthrough</li>
-            <li>Conversations tab with filters and export</li>
-            <li>Messages tab with advanced search</li>
-            <li>Import feature for bulk data</li>
-            <li>Import history and analytics</li>
-            <li>Support system and API documentation</li>
+            <li>Conversations export with filters</li>
+            <li>Messages export with advanced filtering</li>
+            <li>Export history and downloads</li>
+            <li>Volume discounts and pricing</li>
+            <li>Support system</li>
           </ul>
         </div>
       </section>
@@ -291,11 +286,11 @@
     </div>
 
     <div class="footer">
-      <p>&copy; 2026 ConvoVault. All rights reserved.</p>
+      <p>&copy; 2026 Export Messages. All rights reserved.</p>
       <p style="margin-top: 10px;">
-        <a href="/about.html">Home</a> · 
-        <a href="/setup.html">Documentation</a> · 
-        <a href="/terms.html">Terms</a> · 
+        <a href="/about.html">Home</a> ·
+        <a href="/setup.html">Documentation</a> ·
+        <a href="/terms.html">Terms</a> ·
         <a href="/privacy.html">Privacy</a>
       </p>
     </div>

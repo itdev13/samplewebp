@@ -276,13 +276,13 @@ router.post('/charge-and-export', authenticateSession, async (req, res) => {
 
     // Step 4: Check wallet funds
     const hasFunds = await billingService.hasFunds(companyId, accessToken);
-    // if (!hasFunds) {
-    //   return res.status(402).json({
-    //     success: false,
-    //     error: 'Insufficient wallet balance',
-    //     message: 'Please add funds to your GHL wallet to continue'
-    //   });
-    // }
+    if (!hasFunds) {
+      return res.status(402).json({
+        success: false,
+        error: 'Insufficient wallet balance',
+        message: 'Please add funds to your GHL wallet to continue'
+      });
+  }
 
     // Step 5: Create billing transaction (pending)
     const meterCharges = billingService.buildMeterCharges(counts);
