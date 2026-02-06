@@ -61,7 +61,7 @@ export default function Header() {
                 className="w-12 h-12 object-contain rounded-full"
               />
             <div>
-              <h1 className="text-2xl font-bold text-white">ConvoVault</h1>
+              <h1 className="text-2xl font-bold text-white">Export Conversations and Messages</h1>
               <p className="text-sm text-blue-100">Conversation Management Dashboard</p>
             </div>
           </div>
