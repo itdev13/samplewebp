@@ -10,16 +10,16 @@ const APP_ID = process.env.GHL_APP_ID || '694f93f8a6babf0c821b1356';
 
 // Meter IDs for GHL Marketplace billing
 const METER_IDS = {
-  conversations: '697bc5c63b7d446bf5348be6',
-  smsWhatsapp: '697bc3ef3b7d44be52347d87',
-  email: '697bc4342605e37af1f2f385'
+  conversations: '69864aed1265653fdd7c0620',
+  smsWhatsapp: '69864aed1265653fdd7c0620',
+  email: '69864aed1265653fdd7c0620'
 };
 
 // Default unit prices in cents (fallback if API fails)
 const DEFAULT_UNIT_PRICES = {
-  conversations: 0.05,    // 1 cent per conversation
-  smsWhatsapp: 0.05,      // 1 cent per text message
-  email: 0.3             // 3 cents per email message
+  conversations: 0.025,    // 2.5 cents per conversation (1 credit)
+  smsWhatsapp: 0.025,      // 2.5 cents per text message (1 credit)
+  email: 0.075             // 7.5 cents per email message (3 credits)
 };
 
 // Cached prices from GHL API
@@ -29,10 +29,10 @@ let cacheExpiry = null;
 // Volume discount tiers
 const DISCOUNT_TIERS = [
   { min: 0, max: 1000, discount: 0 },
-  { min: 1000, max: 2000, discount: 10 },
-  { min: 2000, max: 5000, discount: 20 },
-  { min: 5000, max: 30000, discount: 30 },
-  { min: 30000, max: Infinity, discount: 40 }
+  { min: 1000, max: 2000, discount: 20 },
+  { min: 2000, max: 5000, discount: 40 },
+  { min: 5000, max: 30000, discount: 50 },
+  { min: 30000, max: Infinity, discount: 70 }
 ];
 
 class BillingService {

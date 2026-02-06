@@ -29,7 +29,34 @@ export default function ExportEstimateModal({
   // Format unit price for display (price is in dollars, e.g., 0.05 = $0.05)
   const formatUnitPrice = (price) => {
     const num = Number(price) || 0;
-    return `$${num.toFixed(2)}`;
+    return `$${num.toFixed(4)}`;
+  };
+
+  // Credit multipliers per channel
+  const CREDIT_MULTIPLIERS = {
+    conversations: 1,
+    smsWhatsapp: 1,
+    email: 3
+  };
+
+  // Calculate credits for a given channel
+  const getCredits = (channel, count) => {
+    return (Number(count) || 0) * (CREDIT_MULTIPLIERS[channel] || 1);
+  };
+
+  // Calculate total credits from estimate
+  const getTotalCredits = (est) => {
+    if (!est?.breakdown) return 0;
+    return getCredits('conversations', est.breakdown.conversations?.count)
+      + getCredits('smsWhatsapp', est.breakdown.smsWhatsapp?.count)
+      + getCredits('email', est.breakdown.email?.count);
+  };
+
+  // Calculate price per credit
+  const getPricePerCredit = (est) => {
+    const totalCredits = getTotalCredits(est);
+    if (totalCredits === 0) return 0;
+    return (Number(est.finalAmount) || 0) / totalCredits;
   };
 
   // Validate email format
@@ -120,11 +147,12 @@ export default function ExportEstimateModal({
                 <div className="flex justify-between items-center py-2 border-b border-gray-100">
                   <div>
                     <span className="text-gray-700 font-medium">Conversations</span>
-                    <div className="text-xs text-gray-500">{formatUnitPrice(estimate.breakdown.conversations.unitPrice)}/conversation</div>
+                    <div className="text-xs text-gray-500">{CREDIT_MULTIPLIERS.conversations} credit per conversation</div>
                   </div>
-                  <span className="font-medium text-gray-800">
-                    {formatNumber(estimate.breakdown.conversations.count)} × {formatUnitPrice(estimate.breakdown.conversations.unitPrice)} = {formatCurrency(estimate.breakdown.conversations.subtotal)}
-                  </span>
+                  <div className="text-right">
+                    <span className="font-medium text-gray-800">{formatNumber(estimate.breakdown.conversations.count)} messages</span>
+                    <div className="text-xs text-indigo-600 font-medium">{formatNumber(getCredits('conversations', estimate.breakdown.conversations.count))} credits</div>
+                  </div>
                 </div>
               )}
 
@@ -133,11 +161,12 @@ export default function ExportEstimateModal({
                 <div className="flex justify-between items-center py-2 border-b border-gray-100">
                   <div>
                     <span className="text-gray-700 font-medium">Text Messages</span>
-                    <div className="text-xs text-gray-500">{formatUnitPrice(estimate.breakdown.smsWhatsapp.unitPrice)}/message</div>
+                    <div className="text-xs text-gray-500">{CREDIT_MULTIPLIERS.smsWhatsapp} credit per message</div>
                   </div>
-                  <span className="font-medium text-gray-800">
-                    {formatNumber(estimate.breakdown.smsWhatsapp.count)} × {formatUnitPrice(estimate.breakdown.smsWhatsapp.unitPrice)} = {formatCurrency(estimate.breakdown.smsWhatsapp.subtotal)}
-                  </span>
+                  <div className="text-right">
+                    <span className="font-medium text-gray-800">{formatNumber(estimate.breakdown.smsWhatsapp.count)} messages</span>
+                    <div className="text-xs text-indigo-600 font-medium">{formatNumber(getCredits('smsWhatsapp', estimate.breakdown.smsWhatsapp.count))} credits</div>
+                  </div>
                 </div>
               )}
 
@@ -146,18 +175,23 @@ export default function ExportEstimateModal({
                 <div className="flex justify-between items-center py-2 border-b border-gray-100">
                   <div>
                     <span className="text-gray-700 font-medium">Email Messages</span>
-                    <div className="text-xs text-gray-500">{formatUnitPrice(estimate.breakdown.email.unitPrice)}/email</div>
+                    <div className="text-xs text-gray-500">{CREDIT_MULTIPLIERS.email} credits per email</div>
                   </div>
-                  <span className="font-medium text-gray-800">
-                    {formatNumber(estimate.breakdown.email.count)} × {formatUnitPrice(estimate.breakdown.email.unitPrice)} = {formatCurrency(estimate.breakdown.email.subtotal)}
-                  </span>
+                  <div className="text-right">
+                    <span className="font-medium text-gray-800">{formatNumber(estimate.breakdown.email.count)} emails</span>
+                    <div className="text-xs text-indigo-600 font-medium">{formatNumber(getCredits('email', estimate.breakdown.email.count))} credits</div>
+                  </div>
                 </div>
               )}
 
-              {/* Total Items */}
+              {/* Total Items & Credits */}
               <div className="flex justify-between items-center pt-2 border-t border-gray-200 text-gray-700">
                 <span className="font-medium">Total Items</span>
                 <span className="font-semibold">{formatNumber(estimate.itemCounts?.total)}</span>
+              </div>
+              <div className="flex justify-between items-center pt-1 text-indigo-700">
+                <span className="font-medium">Total Credits</span>
+                <span className="font-bold">{formatNumber(getTotalCredits(estimate))}</span>
               </div>
             </div>
           </div>
@@ -166,8 +200,13 @@ export default function ExportEstimateModal({
           <div className="bg-blue-50 rounded-lg p-4 border border-blue-200">
             <div className="space-y-2 text-sm">
               <div className="flex justify-between items-center">
-                <span className="text-gray-700">Subtotal</span>
-                <span className="font-medium">{formatCurrency(estimate.baseAmount)}</span>
+                <span className="text-gray-700">Credits</span>
+                <span className="font-medium">{formatNumber(getTotalCredits(estimate))}</span>
+              </div>
+
+              <div className="flex justify-between items-center">
+                <span className="text-gray-700">Price per Credit</span>
+                <span className="font-medium">{formatUnitPrice(getPricePerCredit(estimate))}</span>
               </div>
 
               {estimate.discountPercent > 0 && (
@@ -237,7 +276,7 @@ export default function ExportEstimateModal({
                   { range: '1,000 - 2,000 items', discount: 20 },
                   { range: '2,000 - 5,000 items', discount: 40 },
                   { range: '5,000 - 30,000 items', discount: 50 },
-                  { range: '30,000+ items', discount: 60 }
+                  { range: '30,000+ items', discount: 70 }
                 ].map((tier) => (
                   <div
                     key={tier.discount}
