@@ -291,7 +291,7 @@ class BillingService {
         companyId,
         error: error.response?.data || error.message
       });
-      // throw new Error(error.response?.data?.message || 'Payment failed. Please check your wallet balance.');
+      throw new Error(error.response?.data?.message || 'Payment failed. Please check your wallet balance.');
     }
   }
 
