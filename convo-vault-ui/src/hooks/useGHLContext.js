@@ -1,8 +1,12 @@
 import { useEffect, useState, useRef } from 'react';
 import { API_BASE_URL, FRONTEND_URL } from '../constants/api';
 
+// GHL App ID from marketplace
+const GHL_APP_ID = '694f93f8a6babf0c821b1356';
+
 /**
  * Hook to get user context from parent application
+ * Supports both Custom Pages (postMessage) and Custom JavaScript (exposeSessionDetails) methods
  * Returns: { locationId, companyId, userId, email, userName, type }
  */
 export const useGHLContext = () => {
@@ -23,11 +27,78 @@ export const useGHLContext = () => {
       return;
     }
 
+    // Helper function to decrypt and process user data
+    const decryptUserData = async (encryptedData) => {
+      const decryptUrl = `${API_BASE_URL}/api/auth/decrypt-user-data`;
+
+      const res = await fetch(decryptUrl, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Accept': 'application/json'
+        },
+        credentials: 'include',
+        body: JSON.stringify({ encryptedData })
+      });
+
+      console.log('[useGHLContext] Decrypt response status:', res.status);
+      if (!res.ok) throw new Error('Authentication failed');
+
+      const userData = await res.json();
+      console.log('[useGHLContext] Decrypted user data:', {
+        activeLocation: userData.activeLocation,
+        locationId: userData.locationId,
+        companyId: userData.companyId,
+        userId: userData.userId,
+        success: userData.success
+      });
+
+      if (!userData.success) {
+        throw new Error(userData.error || 'Decryption failed');
+      }
+
+      return userData;
+    };
+
     const initGHL = async () => {
       console.log('[useGHLContext initGHL] Starting initialization...');
+      console.log('[useGHLContext] In iframe?', window.parent !== window);
+      console.log('[useGHLContext] Has exposeSessionDetails?', typeof window.exposeSessionDetails);
 
       try {
-        // Initialize user context
+        // METHOD 1: Try Custom JavaScript method first (exposeSessionDetails)
+        if (typeof window.exposeSessionDetails === 'function') {
+          console.log('[useGHLContext] Using exposeSessionDetails method with APP_ID:', GHL_APP_ID);
+          try {
+            const encryptedData = await window.exposeSessionDetails(GHL_APP_ID);
+            console.log('[useGHLContext] Got encrypted data from exposeSessionDetails, length:', encryptedData?.length);
+
+            if (encryptedData) {
+              resolvedRef.current = true;
+              const userData = await decryptUserData(encryptedData);
+
+              const ctx = {
+                locationId: userData.activeLocation || userData.locationId,
+                companyId: userData.companyId,
+                userId: userData.userId,
+                email: userData.email,
+                userName: userData.userName,
+                role: userData.role,
+                type: userData.type || (userData.activeLocation ? 'Location' : 'Agency')
+              };
+
+              setContext(ctx);
+              setLoading(false);
+              console.log('[useGHLContext] SUCCESS via exposeSessionDetails');
+              return;
+            }
+          } catch (exposeErr) {
+            console.warn('[useGHLContext] exposeSessionDetails failed:', exposeErr.message);
+            // Fall through to postMessage method
+          }
+        }
+
+        // METHOD 2: Try postMessage method (Custom Pages)
         const getUserContext = async () => {
           return new Promise((resolve, reject) => {
             let localTimeoutId;
@@ -48,65 +119,31 @@ export const useGHLContext = () => {
                 }
                 resolvedRef.current = true;
 
-                // Production backend on AWS ALB
-                const decryptUrl = `${API_BASE_URL}/api/auth/decrypt-user-data`;
-
-                fetch(decryptUrl, {
-                  method: 'POST',
-                  headers: {
-                    'Content-Type': 'application/json',
-                    'Accept': 'application/json'
-                  },
-                  credentials: 'include',
-                  body: JSON.stringify({ encryptedData: data.payload })
-                })
-                .then(res => {
-                  console.log('[useGHLContext] Decrypt response status:', res.status);
-                  if (!res.ok) throw new Error(`Authentication failed`);
-                  return res.json();
-                })
-                .then(userData => {
-                  console.log('[useGHLContext] Decrypted user data:', {
-                    activeLocation: userData.activeLocation,
-                    locationId: userData.locationId,
-                    companyId: userData.companyId,
-                    userId: userData.userId,
-                    success: userData.success
-                  });
-
-                  // Validate we got the required data
-                  if (!userData.success) {
-                    throw new Error(userData.error || 'Decryption failed');
-                  }
-
-                  resolve(userData);
-                })
-                .catch(err => {
-                  console.error('[useGHLContext] Decrypt error:', err.message);
-                  reject(err);
-                });
-          }
-        };
+                decryptUserData(data.payload)
+                  .then(resolve)
+                  .catch(reject);
+              }
+            };
 
             window.addEventListener('message', messageHandler);
 
             // Request user data from parent
-        if (window.parent !== window) {
+            if (window.parent !== window) {
               console.log('[useGHLContext] Posting REQUEST_USER_DATA to parent...');
               window.parent.postMessage({ message: 'REQUEST_USER_DATA' }, '*');
             } else {
               console.log('[useGHLContext] NOT in iframe - rejecting');
               reject(new Error('Not in iframe'));
               return;
-        }
+            }
 
-            // Timeout after 3 seconds (only if not resolved)
+            // Timeout after 5 seconds (increased from 3s)
             localTimeoutId = setTimeout(() => {
               if (!resolvedRef.current) {
-                console.log('[useGHLContext] TIMEOUT - no response from parent after 3s');
+                console.log('[useGHLContext] TIMEOUT - no response from parent after 5s');
                 reject(new Error('Authentication timeout'));
               }
-            }, 3000);
+            }, 5000);
           });
         };
 
