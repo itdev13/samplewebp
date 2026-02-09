@@ -18,7 +18,7 @@ export default function ExportEstimateModal({
   // Format currency (value is in dollars)
   const formatCurrency = (value) => {
     const num = Number(value) || 0;
-    return `$${num.toFixed(2)}`;
+    return `$${num}`;
   };
 
   // Format large numbers
