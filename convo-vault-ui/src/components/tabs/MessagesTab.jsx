@@ -138,6 +138,9 @@ export default function MessagesTab() {
     return () => clearInterval(pollInterval);
   }, [activeJob?.jobId, activeJob?.status, location?.id]);
 
+  // Track if using default dates for export
+  const [usingDefaultDates, setUsingDefaultDates] = useState(false);
+
   // Handle get estimate - opens modal and fetches estimate
   const handleGetEstimate = async () => {
     setExportModalVisible(true);
@@ -145,12 +148,24 @@ export default function MessagesTab() {
     setEstimate(null);
     setEstimateError(null);
 
+    // Check if user selected dates - if not, use last 31 days
+    const hasUserDates = filters.startDate || filters.endDate;
+    setUsingDefaultDates(!hasUserDates);
+
+    // Calculate default dates (last 31 days) if user didn't select any
+    const defaultEndDate = dayjs().endOf('day');
+    const defaultStartDate = dayjs().subtract(30, 'day').startOf('day');
+
     try {
-      // Build filters for estimate - use current filter state
+      // Build filters for estimate - use current filter state or defaults
       const exportFilters = {
         channel: filters.channel || undefined,
-        startDate: filters.startDate ? dayjs(filters.startDate).startOf('day').valueOf() : undefined,
-        endDate: filters.endDate ? dayjs(filters.endDate).endOf('day').valueOf() : undefined,
+        startDate: filters.startDate
+          ? dayjs(filters.startDate).startOf('day').valueOf()
+          : defaultStartDate.valueOf(),
+        endDate: filters.endDate
+          ? dayjs(filters.endDate).endOf('day').valueOf()
+          : defaultEndDate.valueOf(),
         contactId: filters.contactId || undefined,
         conversationId: filters.conversationId || undefined
       };
@@ -173,11 +188,19 @@ export default function MessagesTab() {
     setProcessing(true);
     setEstimateError(null);
 
+    // Calculate default dates (last 31 days) if user didn't select any
+    const defaultEndDate = dayjs().endOf('day');
+    const defaultStartDate = dayjs().subtract(30, 'day').startOf('day');
+
     try {
       const exportFilters = {
         channel: filters.channel || undefined,
-        startDate: filters.startDate ? dayjs(filters.startDate).startOf('day').valueOf() : undefined,
-        endDate: filters.endDate ? dayjs(filters.endDate).endOf('day').valueOf() : undefined,
+        startDate: filters.startDate
+          ? dayjs(filters.startDate).startOf('day').valueOf()
+          : defaultStartDate.valueOf(),
+        endDate: filters.endDate
+          ? dayjs(filters.endDate).endOf('day').valueOf()
+          : defaultEndDate.valueOf(),
         contactId: filters.contactId || undefined,
         conversationId: filters.conversationId || undefined
       };
@@ -234,6 +257,7 @@ export default function MessagesTab() {
         estimate={estimate}
         error={estimateError}
         exportType="messages"
+        usingDefaultDates={usingDefaultDates}
       />
 
       {/* Header with Stats */}

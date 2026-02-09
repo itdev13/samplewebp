@@ -89,6 +89,8 @@ async function fetchConversationsPage(locationId, accessToken, filters, skip) {
     params.endDate = date.getTime();
   }
 
+  console.log("params:", params)
+
   const response = await axios.get(`${GHL_API_URL}/conversations/search`, {
     headers: {
       'Authorization': `Bearer ${accessToken}`,
@@ -477,8 +479,11 @@ exports.handler = async (event, context) => {
   // Fetch OAuth token from oauthtokens collection
   const oauthToken = await db.collection('oauthtokens').findOne({
     locationId: job.locationId,
-    isActive: true
+    tokenType: 'location',
+    isActive: true,
   });
+
+  console.log("oauth: ", oauthToken);
 
   if (!oauthToken || !oauthToken.refreshToken) {
     logError('No valid OAuth token found for location:', job.locationId);
@@ -504,13 +509,12 @@ exports.handler = async (event, context) => {
     // CRITICAL: Re-read latest token from DB to avoid race condition
     // Another Lambda or API request might have already refreshed it
     const latestToken = await db.collection('oauthtokens').findOne({ _id: oauthToken._id });
+    console.log("oauth refresh: ", oauthToken);
 
     if (!latestToken) {
       throw new Error('OAuth token not found in database');
     }
 
-    // Check if token was recently refreshed by another process (within last 5 minutes)
-    const fiveMinutesAgo = new Date(Date.now() - 5 * 60 * 1000);
     if (latestToken.expiresAt > new Date(Date.now() + 23 * 60 * 60 * 1000)) {
       // Token expires in more than 23 hours, meaning it was just refreshed
       log('Token was recently refreshed by another process, using latest');
@@ -534,7 +538,7 @@ exports.handler = async (event, context) => {
           $set: {
             accessToken: tokenData.accessToken,
             refreshToken: tokenData.refreshToken,
-            expiresAt: new Date(Date.now() + 24 * 60 * 60 * 1000) // 24 hours
+            expiresAt: new Date(Date.now() + 23 * 60 * 60 * 1000) // 24 hours
           }
         }
       );
