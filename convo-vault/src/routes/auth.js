@@ -42,11 +42,13 @@ router.post('/decrypt-user-data', async (req, res) => {
     }
 
     // Return decrypted user data
+    // Note: GHL returns 'activeLocation' for location context
     res.json({
       success: true,
       userId: userData.userId,
       companyId: userData.companyId,
-      locationId: userData.activeLocation || null,
+      activeLocation: userData.activeLocation || null,  // Original GHL field name
+      locationId: userData.activeLocation || null,      // Alias for convenience
       email: userData.email,
       userName: userData.userName,
       role: userData.role,

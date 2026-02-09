@@ -33,7 +33,12 @@ export const useGHLContext = () => {
             let localTimeoutId;
 
             messageHandler = ({ data, origin }) => {
-              console.log('[useGHLContext] Message received:', { message: data.message, origin });
+              console.log('[useGHLContext] Message received:', {
+                message: data.message,
+                origin,
+                hasPayload: !!data.payload,
+                payloadLength: data.payload ? data.payload.length : 0
+              });
 
               // Response with encrypted user data
               if (data.message === 'REQUEST_USER_DATA_RESPONSE' && !resolvedRef.current) {
@@ -62,10 +67,18 @@ export const useGHLContext = () => {
                 })
                 .then(userData => {
                   console.log('[useGHLContext] Decrypted user data:', {
-                    locationId: userData.activeLocation || userData.locationId,
+                    activeLocation: userData.activeLocation,
+                    locationId: userData.locationId,
                     companyId: userData.companyId,
-                    userId: userData.userId
+                    userId: userData.userId,
+                    success: userData.success
                   });
+
+                  // Validate we got the required data
+                  if (!userData.success) {
+                    throw new Error(userData.error || 'Decryption failed');
+                  }
+
                   resolve(userData);
                 })
                 .catch(err => {
