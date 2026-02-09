@@ -66,38 +66,6 @@ export const useGHLContext = () => {
       console.log('[useGHLContext] Has exposeSessionDetails?', typeof window.exposeSessionDetails);
 
       try {
-        // METHOD 1: Try Custom JavaScript method first (exposeSessionDetails)
-        if (typeof window.exposeSessionDetails === 'function') {
-          console.log('[useGHLContext] Using exposeSessionDetails method with APP_ID:', GHL_APP_ID);
-          try {
-            const encryptedData = await window.exposeSessionDetails(GHL_APP_ID);
-            console.log('[useGHLContext] Got encrypted data from exposeSessionDetails, length:', encryptedData?.length);
-
-            if (encryptedData) {
-              resolvedRef.current = true;
-              const userData = await decryptUserData(encryptedData);
-
-              const ctx = {
-                locationId: userData.activeLocation || userData.locationId,
-                companyId: userData.companyId,
-                userId: userData.userId,
-                email: userData.email,
-                userName: userData.userName,
-                role: userData.role,
-                type: userData.type || (userData.activeLocation ? 'Location' : 'Agency')
-              };
-
-              setContext(ctx);
-              setLoading(false);
-              console.log('[useGHLContext] SUCCESS via exposeSessionDetails');
-              return;
-            }
-          } catch (exposeErr) {
-            console.warn('[useGHLContext] exposeSessionDetails failed:', exposeErr.message);
-            // Fall through to postMessage method
-          }
-        }
-
         // METHOD 2: Try postMessage method (Custom Pages)
         const getUserContext = async () => {
           return new Promise((resolve, reject) => {
