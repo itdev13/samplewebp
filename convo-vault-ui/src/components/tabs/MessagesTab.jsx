@@ -12,18 +12,32 @@ import { getMessageTypeDisplay, getMessageTypeIcon } from '../../utils/messageTy
 import { copyToClipboard } from '../../utils/clipboard';
 import dayjs from 'dayjs';
 
+// Default date range: 6 months
+const getDefaultDates = () => ({
+  startDate: dayjs().subtract(6, 'month').format('YYYY-MM-DD'),
+  endDate: dayjs().format('YYYY-MM-DD')
+});
+
 export default function MessagesTab() {
   const { location } = useAuth();
+  const defaultDates = getDefaultDates();
   const [filters, setFilters] = useState({
     channel: '',
-    startDate: '',
-    endDate: '',
+    startDate: defaultDates.startDate,
+    endDate: defaultDates.endDate,
     contactId: '',
     conversationId: '',
     limit: 50
   });
   const [cursor, setCursor] = useState(null);
-  const [appliedFilters, setAppliedFilters] = useState(filters); // Filters actually used for API
+  const [appliedFilters, setAppliedFilters] = useState({
+    channel: '',
+    startDate: defaultDates.startDate,
+    endDate: defaultDates.endDate,
+    contactId: '',
+    conversationId: '',
+    limit: 50
+  }); // Filters actually used for API
   const [shouldFetch, setShouldFetch] = useState(true); // Trigger for initial load
   const [searchTimestamp, setSearchTimestamp] = useState(Date.now()); // Force refetch even with same filters
   const [exportModalVisible, setExportModalVisible] = useState(false);
@@ -154,7 +168,7 @@ export default function MessagesTab() {
 
     // Calculate default dates (last 31 days) if user didn't select any
     const defaultEndDate = dayjs().endOf('day');
-    const defaultStartDate = dayjs().subtract(30, 'day').startOf('day');
+    const defaultStartDate = dayjs().subtract(6, 'month').startOf('day');
 
     try {
       // Build filters for estimate - use current filter state or defaults
@@ -190,7 +204,7 @@ export default function MessagesTab() {
 
     // Calculate default dates (last 31 days) if user didn't select any
     const defaultEndDate = dayjs().endOf('day');
-    const defaultStartDate = dayjs().subtract(30, 'day').startOf('day');
+    const defaultStartDate = dayjs().subtract(6, 'month').startOf('day');
 
     try {
       const exportFilters = {

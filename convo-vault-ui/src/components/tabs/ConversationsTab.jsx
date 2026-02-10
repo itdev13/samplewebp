@@ -12,12 +12,19 @@ import { copyToClipboard } from '../../utils/clipboard';
 import dayjs from 'dayjs';
 import { getMessageTypeDisplay } from '../../utils/messageTypes';
 
+// Default date range: 6 months
+const getDefaultDates = () => ({
+  startDate: dayjs().subtract(6, 'month').format('YYYY-MM-DD'),
+  endDate: dayjs().format('YYYY-MM-DD')
+});
+
 export default function ConversationsTab({ onSelectConversation }) {
   const { location } = useAuth();
+  const defaultDates = getDefaultDates();
   const [filters, setFilters] = useState({
     limit: 20,
-    startDate: '',
-    endDate: '',
+    startDate: defaultDates.startDate,
+    endDate: defaultDates.endDate,
     query: '',  // Universal search across multiple fields
     id: '',
     contactId: '',  // Filter by specific contact
@@ -27,7 +34,19 @@ export default function ConversationsTab({ onSelectConversation }) {
     lastMessageAction: '',
     sortBy: 'last_message_date'
   });
-  const [appliedFilters, setAppliedFilters] = useState(filters); // Filters actually used for API
+  const [appliedFilters, setAppliedFilters] = useState({
+    limit: 20,
+    startDate: defaultDates.startDate,
+    endDate: defaultDates.endDate,
+    query: '',
+    id: '',
+    contactId: '',
+    lastMessageType: '',
+    lastMessageDirection: '',
+    status: '',
+    lastMessageAction: '',
+    sortBy: 'last_message_date'
+  }); // Filters actually used for API
   const [shouldFetch, setShouldFetch] = useState(true); // Trigger for initial load
   const [searchTimestamp, setSearchTimestamp] = useState(Date.now()); // Force refetch even with same filters
   const [exportModalVisible, setExportModalVisible] = useState(false);
@@ -132,7 +151,7 @@ export default function ConversationsTab({ onSelectConversation }) {
 
     // Calculate default dates (last 31 days) if user didn't select any
     const defaultEndDate = dayjs().endOf('day');
-    const defaultStartDate = dayjs().subtract(30, 'day').startOf('day');
+    const defaultStartDate = dayjs().subtract(6, 'month').startOf('day');
 
     try {
       // Build export filters with all conversation filter options
@@ -173,7 +192,7 @@ export default function ConversationsTab({ onSelectConversation }) {
 
     // Calculate default dates (last 31 days) if user didn't select any
     const defaultEndDate = dayjs().endOf('day');
-    const defaultStartDate = dayjs().subtract(30, 'day').startOf('day');
+    const defaultStartDate = dayjs().subtract(6, 'month').startOf('day');
 
     try {
       // Build export filters with all conversation filter options
