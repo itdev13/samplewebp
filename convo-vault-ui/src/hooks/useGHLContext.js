@@ -41,17 +41,9 @@ export const useGHLContext = () => {
         body: JSON.stringify({ encryptedData })
       });
 
-      console.log('[useGHLContext] Decrypt response status:', res.status);
       if (!res.ok) throw new Error('Authentication failed');
 
       const userData = await res.json();
-      console.log('[useGHLContext] Decrypted user data:', {
-        activeLocation: userData.activeLocation,
-        locationId: userData.locationId,
-        companyId: userData.companyId,
-        userId: userData.userId,
-        success: userData.success
-      });
 
       if (!userData.success) {
         throw new Error(userData.error || 'Decryption failed');
@@ -61,10 +53,6 @@ export const useGHLContext = () => {
     };
 
     const initGHL = async () => {
-      console.log('[useGHLContext initGHL] Starting initialization...');
-      console.log('[useGHLContext] In iframe?', window.parent !== window);
-      console.log('[useGHLContext] Has exposeSessionDetails?', typeof window.exposeSessionDetails);
-
       try {
         // METHOD 2: Try postMessage method (Custom Pages)
         const getUserContext = async () => {
@@ -143,11 +131,6 @@ export const useGHLContext = () => {
             setLoading(false);
           return;
         }
-
-      
-          // No context available - redirect to about page on FRONTEND
-          console.log('[useGHLContext] ⚠️ NO CONTEXT AVAILABLE - REDIRECTING TO ABOUT PAGE');
-          console.log('[useGHLContext] Redirect URL:', `${FRONTEND_URL}/about.html`);
           window.location.href = `${FRONTEND_URL}/about.html`;
         }
       } catch (err) {
