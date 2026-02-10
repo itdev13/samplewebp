@@ -25,11 +25,11 @@ const LAMBDA_FUNCTION_NAME = process.env.EXPORT_LAMBDA_FUNCTION_NAME || 'convo-v
  * Billing Routes - Handle export pricing, charges, and job management
  */
 
-// Maximum date range for exports (1 month in milliseconds)
-const MAX_DATE_RANGE_MS = 31 * 24 * 60 * 60 * 1000;
+// Maximum date range for exports (6 months in milliseconds)
+const MAX_DATE_RANGE_MS = 6 * 31 * 24 * 60 * 60 * 1000;
 
 /**
- * Validate date range doesn't exceed 1 year
+ * Validate date range doesn't exceed 6 months
  */
 function validateDateRange(startDate, endDate) {
   if (!startDate || !endDate) return { valid: true };
@@ -42,7 +42,7 @@ function validateDateRange(startDate, endDate) {
   }
 
   if (end - start > MAX_DATE_RANGE_MS) {
-    return { valid: false, error: 'Date range cannot exceed 1 month' };
+    return { valid: false, error: 'Date range cannot exceed 6 months' };
   }
 
   if (end < start) {
