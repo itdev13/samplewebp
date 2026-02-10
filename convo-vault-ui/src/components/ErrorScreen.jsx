@@ -7,15 +7,36 @@ export default function ErrorScreen({ error }) {
   
   const isNotConnected = errorString && errorString.includes('not connected');
   const isInstallRequired = errorString === 'INSTALL_REQUIRED';
+  const isRefreshRequired = errorString === 'REFRESH_REQUIRED';
   const isTokenExpired = errorString && (
-    errorString.includes('token expired') || 
+    errorString.includes('token expired') ||
     errorString.includes('authentication has expired') ||
     errorString.includes('Authentication failed') ||
     errorString.includes('Please reconnect') ||
     errorString.includes('Company token expired')
   );
-  
+
   const needsReconnect = isNotConnected || isInstallRequired || isTokenExpired;
+
+  if (isRefreshRequired) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
+        <div className="bg-white rounded-lg shadow-lg p-8 max-w-md w-full text-center">
+          <div className="text-5xl mb-4">🔄</div>
+          <h2 className="text-2xl font-bold text-gray-800 mb-2">Page Load Issue</h2>
+          <p className="text-gray-600 mb-6">
+            We couldn't load the app properly. Please refresh the page to try again.
+          </p>
+          <button
+            onClick={() => window.location.reload()}
+            className="w-full px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-semibold text-lg"
+          >
+            🔄 Refresh Page
+          </button>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
@@ -25,17 +46,17 @@ export default function ErrorScreen({ error }) {
             {isTokenExpired ? '🔐' : isInstallRequired ? '📦' : '⚠️'}
           </div>
           <h2 className="text-2xl font-bold text-gray-800 mb-2">
-            {isTokenExpired 
-              ? 'Authentication Expired' 
-              : isInstallRequired 
-                ? 'App Not Installed' 
+            {isTokenExpired
+              ? 'Authentication Expired'
+              : isInstallRequired
+                ? 'App Not Installed'
                 : 'Connection Error'
             }
           </h2>
           <p className="text-gray-600 mb-6">
             {isTokenExpired
               ? 'Your authentication session has expired. Please reconnect the app to continue.'
-              : isInstallRequired 
+              : isInstallRequired
                 ? 'ConvoVault is not installed in this sub-account. Please install the app first.'
                 : errorString
             }

@@ -131,7 +131,8 @@ export const useGHLContext = () => {
             setLoading(false);
           return;
         }
-          window.location.href = `${FRONTEND_URL}/about.html`;
+          setError('REFRESH_REQUIRED');
+          setLoading(false);
         }
       } catch (err) {
         console.error('[useGHLContext] ❌ GHL Context Error:', err.message || 'Context initialization failed');
