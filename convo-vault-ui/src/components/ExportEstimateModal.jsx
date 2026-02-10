@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Modal, Button, Spin, Alert, Input, Collapse } from 'antd';
+import { Modal, Button, Spin, Alert, Input, Collapse, Radio } from 'antd';
 
 const { Panel } = Collapse;
 
@@ -15,6 +15,7 @@ export default function ExportEstimateModal({
   usingDefaultDates = false
 }) {
   const [email, setEmail] = useState('');
+  const [exportFormat, setExportFormat] = useState('csv');
 
   // Format currency (value is in dollars)
   const formatCurrency = (value) => {
@@ -70,7 +71,7 @@ export default function ExportEstimateModal({
     if (!isValidEmail(email)) {
       return; // Button should be disabled anyway
     }
-    onConfirm(email.trim());
+    onConfirm(email.trim(), exportFormat);
   };
 
   return (
@@ -344,6 +345,23 @@ export default function ExportEstimateModal({
             )}
             <p className="text-xs text-gray-500 mt-2">
               We'll send you the download link when your export is ready. Download links expire after 1 week.
+            </p>
+          </div>
+
+          {/* Export Format */}
+          <div className="bg-gray-50 rounded-lg p-4 border border-gray-200">
+            <label className="block text-sm font-medium text-gray-700 mb-2 flex items-center gap-2">
+              <svg className="w-4 h-4 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z" />
+              </svg>
+              Export Format
+            </label>
+            <Radio.Group value={exportFormat} onChange={(e) => setExportFormat(e.target.value)}>
+              <Radio value="csv">CSV</Radio>
+              <Radio value="json">JSON</Radio>
+            </Radio.Group>
+            <p className="text-xs text-gray-500 mt-2">
+              {exportFormat === 'csv' ? 'Spreadsheet-friendly format. Opens in Excel, Google Sheets, etc.' : 'Structured data format. Ideal for developers and integrations.'}
             </p>
           </div>
 

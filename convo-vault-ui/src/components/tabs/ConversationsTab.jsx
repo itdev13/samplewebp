@@ -186,7 +186,7 @@ export default function ConversationsTab({ onSelectConversation }) {
   };
 
   // Handle pay and export
-  const handlePayAndExport = async (notificationEmail) => {
+  const handlePayAndExport = async (notificationEmail, format = 'csv') => {
     setProcessing(true);
     setEstimateError(null);
 
@@ -216,7 +216,7 @@ export default function ConversationsTab({ onSelectConversation }) {
       const response = await billingAPI.chargeAndExport(
         location.id,
         'conversations',
-        'csv',
+        format,
         exportFilters,
         notificationEmail
       );

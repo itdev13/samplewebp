@@ -198,7 +198,7 @@ export default function MessagesTab() {
   };
 
   // Handle pay and export
-  const handlePayAndExport = async (notificationEmail) => {
+  const handlePayAndExport = async (notificationEmail, format = 'csv') => {
     setProcessing(true);
     setEstimateError(null);
 
@@ -222,7 +222,7 @@ export default function MessagesTab() {
       const response = await billingAPI.chargeAndExport(
         location.id,
         'messages',
-        'csv',
+        format,
         exportFilters,
         notificationEmail
       );
