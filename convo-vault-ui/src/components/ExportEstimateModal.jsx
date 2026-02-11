@@ -92,7 +92,7 @@ export default function ExportEstimateModal({
         </div>
       }
       footer={null}
-      width={520}
+      width={600}
       centered
     >
       {/* Loading State */}
@@ -164,7 +164,7 @@ export default function ExportEstimateModal({
                     <div className="text-xs text-gray-500">{CREDIT_MULTIPLIERS.conversations} credit per conversation</div>
                   </div>
                   <div className="text-right">
-                    <span className="font-medium text-gray-800">{formatNumber(estimate.breakdown.conversations.count)} messages</span>
+                    <span className="font-medium text-gray-800">{formatNumber(estimate.breakdown.conversations.count)}</span>
                     <div className="text-xs text-indigo-600 font-medium">{formatNumber(getCredits('conversations', estimate.breakdown.conversations.count))} credits</div>
                   </div>
                 </div>
@@ -178,7 +178,7 @@ export default function ExportEstimateModal({
                     <div className="text-xs text-gray-500">{CREDIT_MULTIPLIERS.smsWhatsapp} credit per message</div>
                   </div>
                   <div className="text-right">
-                    <span className="font-medium text-gray-800">{formatNumber(estimate.breakdown.smsWhatsapp.count)} messages</span>
+                    <span className="font-medium text-gray-800">{formatNumber(estimate.breakdown.smsWhatsapp.count)} </span>
                     <div className="text-xs text-indigo-600 font-medium">{formatNumber(getCredits('smsWhatsapp', estimate.breakdown.smsWhatsapp.count))} credits</div>
                   </div>
                 </div>
@@ -199,14 +199,14 @@ export default function ExportEstimateModal({
               )}
 
               {/* Total Items & Credits */}
-              <div className="flex justify-between items-center pt-2 border-t border-gray-200 text-gray-700">
+              {/*<div className="flex justify-between items-center pt-2 border-t border-gray-200 text-gray-700">
                 <span className="font-medium">Total Items</span>
                 <span className="font-semibold">{formatNumber(estimate.itemCounts?.total)}</span>
               </div>
               <div className="flex justify-between items-center pt-1 text-indigo-700">
                 <span className="font-medium">Total Credits</span>
                 <span className="font-bold">{formatNumber(getTotalCredits(estimate))}</span>
-              </div>
+              </div>*/}
             </div>
           </div>
 
@@ -376,7 +376,7 @@ export default function ExportEstimateModal({
           </div>
 
           {/* Action Buttons */}
-          <div className="flex gap-3 pt-2">
+          <div className="flex gap-3">
             <Button
               onClick={onCancel}
               className="flex-1 h-11"
