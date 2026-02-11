@@ -520,22 +520,33 @@ class GHLService {
 
     // Copy filters, converting dates to timestamps for GHL API
     Object.keys(filters).forEach(key => {
-      if (key === 'startDate' || key === 'endDate') {
-        // Convert date (timestamp or ISO string) to millisecond timestamp
+     if (key === 'startDate' || key === 'endDate') {
         const dateValue = filters[key];
+
         if (dateValue) {
           const dateStr = String(dateValue).trim();
-          
-          // Check if it's already a millisecond timestamp
+
+          let date;
+
+          // If already a millisecond timestamp
           if (!isNaN(Number(dateStr)) && !dateStr.includes('T') && !dateStr.includes('-')) {
-            // Pass timestamp directly to GHL API
-            params[key] = Number(dateStr);
+            date = new Date(Number(dateStr));
           } else {
-            // Convert ISO string to timestamp
-            const date = new Date(dateStr);
-            if (!isNaN(date.getTime())) {
-              params[key] = date.getTime(); // Convert to millisecond timestamp
+            date = new Date(dateStr);
+          }
+
+          if (!isNaN(date.getTime())) {
+            if (key === 'startDate') {
+              // Set to 12:00 AM
+              date.setHours(0, 0, 0, 0);
             }
+
+            if (key === 'endDate') {
+              // Set to 11:59:59.999 PM
+              date.setHours(23, 59, 59, 999);
+            }
+
+            params[key] = date.getTime(); // Convert to millisecond timestamp
           }
         }
       } else if (filters[key] !== '' && filters[key] !== null && filters[key] !== undefined) {
